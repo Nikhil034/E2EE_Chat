@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>E2EE Chat</title>
+  <style>
+    body { font-family: monospace; max-width: 700px; margin: 40px auto; padding: 0 20px; background: #0d0d0d; color: #e0e0e0; }
+    h2 { color: #4ade80; }
+    #status { color: #888; font-size: 13px; margin-bottom: 16px; }
+    #peers { margin: 16px 0; }
+    .peer-btn { background: #1a1a2e; color: #7dd3fc; border: 1px solid #334155; padding: 6px 12px; margin: 4px; border-radius: 6px; cursor: pointer; font-family: monospace; }
+    .peer-btn.active { border-color: #4ade80; color: #4ade80; }
+    #chat { border: 1px solid #334155; border-radius: 8px; padding: 12px; min-height: 200px; max-height: 360px; overflow-y: auto; margin: 16px 0; }
+    .msg { margin: 6px 0; font-size: 13px; }
+    .msg .who { color: #94a3b8; }
+    .msg .text { color: #e2e8f0; }
+    #input-row { display: flex; gap: 8px; }
+    #msg-input { flex: 1; background: #1a1a1a; border: 1px solid #334155; color: #e0e0e0; padding: 8px 12px; border-radius: 6px; font-family: monospace; }
+    button#send-btn { background: #166534; color: #4ade80; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+    #my-id { font-size: 12px; color: #64748b; }
+  </style>
+</head>
+<body>
+  <h2>E2EE Chat</h2>
+  <div id="status">Generating keys...</div>
+  <div id="my-id"></div>
+  <div id="peers"><strong>Peers:</strong> <span id="peer-list">none</span></div>
+  <div id="chat"></div>
+  <div id="input-row">
+    <input id="msg-input" placeholder="Type a message..." disabled />
+    <button id="send-btn" disabled>Send</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    let myKeyPair = null;        // CryptoKeyPair (ECDH)
+    let myPublicKeyJwk = null;   // exportable JWK of public key
+    let selectedPeer = null;     // { id, key: CryptoKey }
+    const peerKeys = {};         // socketId -> CryptoKey (imported public key)
+
+    // ── Crypto helpers ──────────────────────────────────────────────
+
+    async function generateKeyPair() {
+      return crypto.subtle.generateKey(
+        { name: 'ECDH', namedCurve: 'P-256' },
+        true,       // extractable (so we can export the public key)
+        ['deriveKey']
+      );
+    }
+
+    async function exportPublicKey(key) {
+      return crypto.subtle.exportKey('jwk', key);
+    }
+
+    async function importPublicKey(jwk) {
+      return crypto.subtle.importKey(
+        'jwk', jwk,
+        { name: 'ECDH', namedCurve: 'P-256' },
+        true,
+        []          // no key usages for imported public keys in ECDH
+      );
+    }
+
+    async function deriveSharedKey(myPrivateKey, theirPublicKey) {
+      return crypto.subtle.deriveKey(
+        { name: 'ECDH', public: theirPublicKey },
+        myPrivateKey,
+        { name: 'AES-GCM', length: 256 },
+        false,      // not extractable — session key never leaves memory
+        ['encrypt', 'decrypt']
+      );
+    }
+
+    async function encrypt(aesKey, plaintext) {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const encoded = new TextEncoder().encode(plaintext);
+      const ciphertext = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        aesKey,
+        encoded
+      );
+      // Return as base64 strings for easy transport over JSON
+      return {
+        iv: btoa(String.fromCharCode(...iv)),
+        ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext)))
+      };
+    }
+
+    async function decrypt(aesKey, ciphertextB64, ivB64) {
+      const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
+      const ciphertext = Uint8Array.from(atob(ciphertextB64), c => c.charCodeAt(0));
+      const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        aesKey,
+        ciphertext
+      );
+      return new TextDecoder().decode(decrypted);
+    }
+
+    // ── Init ─────────────────────────────────────────────────────────
+
+    (async () => {
+      myKeyPair = await generateKeyPair();
+      myPublicKeyJwk = await exportPublicKey(myKeyPair.publicKey);
+      document.getElementById('status').textContent = 'Keys generated. Connecting...';
+      socket.emit('register-key', myPublicKeyJwk);
+    })();
+
+    // ── Socket events ─────────────────────────────────────────────────
+
+    socket.on('connect', () => {
+      document.getElementById('my-id').textContent = 'Your ID: ' + socket.id;
+    });
+
+    socket.on('peer-list', async (peers) => {
+      const container = document.getElementById('peer-list');
+      container.innerHTML = '';
+      for (const peer of peers) {
+        if (peer.id === socket.id) continue;  // skip self
+        // Import + cache each peer's public key
+        if (!peerKeys[peer.id]) {
+          peerKeys[peer.id] = await importPublicKey(peer.key);
+        }
+        const btn = document.createElement('button');
+        btn.className = 'peer-btn' + (selectedPeer?.id === peer.id ? ' active' : '');
+        btn.textContent = peer.id.slice(0, 8) + '…';
+        btn.onclick = () => selectPeer(peer.id);
+        container.appendChild(btn);
+      }
+      if (!peers.find(p => p.id !== socket.id)) {
+        container.textContent = 'none (open another tab)';
+      }
+    });
+
+    socket.on('receive-message', async ({ from, ciphertext, iv, senderPublicKey }) => {
+      try {
+        // Import sender's public key (they send it so we can derive the shared key)
+        const senderCryptoKey = await importPublicKey(senderPublicKey);
+        const sharedKey = await deriveSharedKey(myKeyPair.privateKey, senderCryptoKey);
+        const plaintext = await decrypt(sharedKey, ciphertext, iv);
+        appendMessage(from.slice(0, 8) + '…', plaintext);
+      } catch (e) {
+        appendMessage('system', '[decryption failed: ' + e.message + ']');
+      }
+    });
+
+    // ── UI helpers ────────────────────────────────────────────────────
+
+    function selectPeer(id) {
+      selectedPeer = { id, key: peerKeys[id] };
+      document.getElementById('msg-input').disabled = false;
+      document.getElementById('send-btn').disabled = false;
+      document.querySelectorAll('.peer-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    function appendMessage(who, text) {
+      const div = document.createElement('div');
+      div.className = 'msg';
+      div.innerHTML = `<span class="who">${who}: </span><span class="text">${text}</span>`;
+      const chat = document.getElementById('chat');
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    document.getElementById('send-btn').onclick = async () => {
+      const input = document.getElementById('msg-input');
+      const text = input.value.trim();
+      if (!text || !selectedPeer) return;
+
+      const sharedKey = await deriveSharedKey(myKeyPair.privateKey, selectedPeer.key);
+      const { ciphertext, iv } = await encrypt(sharedKey, text);
+
+      socket.emit('send-message', {
+        to: selectedPeer.id,
+        ciphertext,
+        iv,
+        senderPublicKey: myPublicKeyJwk,  // receiver needs this to derive same shared key
+      });
+
+      appendMessage('you', text);
+      input.value = '';
+    };
+
+    document.getElementById('msg-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('send-btn').click();
+    });
+  </script>
+</body>
+</html>
