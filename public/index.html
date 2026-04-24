@@ -1,192 +1,957 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>E2EE Chat</title>
-  <style>
-    body { font-family: monospace; max-width: 700px; margin: 40px auto; padding: 0 20px; background: #0d0d0d; color: #e0e0e0; }
-    h2 { color: #4ade80; }
-    #status { color: #888; font-size: 13px; margin-bottom: 16px; }
-    #peers { margin: 16px 0; }
-    .peer-btn { background: #1a1a2e; color: #7dd3fc; border: 1px solid #334155; padding: 6px 12px; margin: 4px; border-radius: 6px; cursor: pointer; font-family: monospace; }
-    .peer-btn.active { border-color: #4ade80; color: #4ade80; }
-    #chat { border: 1px solid #334155; border-radius: 8px; padding: 12px; min-height: 200px; max-height: 360px; overflow-y: auto; margin: 16px 0; }
-    .msg { margin: 6px 0; font-size: 13px; }
-    .msg .who { color: #94a3b8; }
-    .msg .text { color: #e2e8f0; }
-    #input-row { display: flex; gap: 8px; }
-    #msg-input { flex: 1; background: #1a1a1a; border: 1px solid #334155; color: #e0e0e0; padding: 8px 12px; border-radius: 6px; font-family: monospace; }
-    button#send-btn { background: #166534; color: #4ade80; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
-    #my-id { font-size: 12px; color: #64748b; }
-  </style>
-</head>
-<body>
-  <h2>E2EE Chat</h2>
-  <div id="status">Generating keys...</div>
-  <div id="my-id"></div>
-  <div id="peers"><strong>Peers:</strong> <span id="peer-list">none</span></div>
-  <div id="chat"></div>
-  <div id="input-row">
-    <input id="msg-input" placeholder="Type a message..." disabled />
-    <button id="send-btn" disabled>Send</button>
-  </div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>E2EE Chat</title>
+    <style>
+      body {
+        font-family: monospace;
+        max-width: 700px;
+        margin: 40px auto;
+        padding: 0 20px;
+        background: #0d0d0d;
+        color: #e0e0e0;
+      }
+      h2 {
+        color: #4ade80;
+      }
+      #status {
+        color: #888;
+        font-size: 13px;
+        margin-bottom: 16px;
+      }
+      #peers {
+        margin: 16px 0;
+      }
+      .peer-btn {
+        background: #1a1a2e;
+        color: #7dd3fc;
+        border: 1px solid #334155;
+        padding: 6px 12px;
+        margin: 4px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-family: monospace;
+      }
+      .peer-btn.active {
+        border-color: #4ade80;
+        color: #4ade80;
+      }
+      #chat {
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 12px;
+        min-height: 200px;
+        max-height: 360px;
+        overflow-y: auto;
+        margin: 16px 0;
+      }
+      .msg {
+        margin: 6px 0;
+        font-size: 13px;
+      }
+      .msg .who {
+        color: #94a3b8;
+      }
+      .msg .text {
+        color: #e2e8f0;
+      }
+      #input-row {
+        display: flex;
+        gap: 8px;
+      }
+      #msg-input {
+        flex: 1;
+        background: #1a1a1a;
+        border: 1px solid #334155;
+        color: #e0e0e0;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-family: monospace;
+      }
+      button#send-btn {
+        background: #166534;
+        color: #4ade80;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      #my-id {
+        font-size: 12px;
+        color: #64748b;
+      }
+      .msg {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin: 6px 0;
+        font-size: 13px;
+      }
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
+      /* Outgoing messages align right */
+      .msg-sent {
+        flex-direction: row-reverse;
+      }
+      .msg-sent .who {
+        display: none;
+      } /* hide "you:" label on sent */
+      .msg-sent .text {
+        background: #1e3a2f;
+        color: #a7f3d0;
+        padding: 5px 10px;
+        border-radius: 10px 10px 2px 10px;
+      }
 
-    let myKeyPair = null;        // CryptoKeyPair (ECDH)
-    let myPublicKeyJwk = null;   // exportable JWK of public key
-    let selectedPeer = null;     // { id, key: CryptoKey }
-    const peerKeys = {};         // socketId -> CryptoKey (imported public key)
+      /* Incoming messages align left */
+      .msg-received .text {
+        background: #1e293b;
+        color: #e2e8f0;
+        padding: 5px 10px;
+        border-radius: 10px 10px 10px 2px;
+      }
+      .msg-error .text {
+        background: #450a0a;
+        color: #fecaca;
+        padding: 5px 10px;
+        border-radius: 10px;
+      }
 
-    // ── Crypto helpers ──────────────────────────────────────────────
+      /* Tick states */
+      .tick {
+        font-size: 11px;
+        font-family: monospace;
+        min-width: 18px;
+        transition: color 0.3s;
+      }
+      .tick-sent {
+        color: #334155;
+      } /* grey — single tick */
+      .tick-delivered {
+        color: #64748b;
+      } /* grey — double tick */
+      .tick-read {
+        color: #38bdf8;
+      } /* blue — double tick */
+      .sig-badge {
+        font-size: 10px;
+        font-weight: 500;
+        padding: 2px 7px;
+        border-radius: 20px;
+        font-family: monospace;
+        white-space: nowrap;
+      }
 
-    async function generateKeyPair() {
-      return crypto.subtle.generateKey(
-        { name: 'ECDH', namedCurve: 'P-256' },
-        true,       // extractable (so we can export the public key)
-        ['deriveKey']
-      );
-    }
+      .sig-ok {
+        background: #052e16;
+        color: #4ade80;
+        border: 1px solid #166534;
+      }
 
-    async function exportPublicKey(key) {
-      return crypto.subtle.exportKey('jwk', key);
-    }
+      .sig-fail {
+        background: #450a0a;
+        color: #f87171;
+        border: 1px solid #7f1d1d;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>E2EE Chat</h2>
+    <div id="status">Generating keys...</div>
+    <!-- Your identity -->
+    <div id="my-id" style="font-size: 12px; color: #64748b"></div>
+    <div
+      style="
+        margin: 10px 0 16px;
+        padding: 10px 14px;
+        background: #0f172a;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+      "
+    >
+      <div style="font-size: 11px; color: #64748b; margin-bottom: 4px">
+        YOUR KEY FINGERPRINT — read this aloud to verify your identity
+      </div>
+      <div
+        id="my-fingerprint"
+        style="
+          font-size: 15px;
+          color: #4ade80;
+          font-family: monospace;
+          letter-spacing: 0.05em;
+        "
+      >
+        computing...
+      </div>
+      <div
+        id="my-fingerprint-hex"
+        style="
+          font-size: 10px;
+          color: #334155;
+          margin-top: 3px;
+          font-family: monospace;
+        "
+      ></div>
+    </div>
 
-    async function importPublicKey(jwk) {
-      return crypto.subtle.importKey(
-        'jwk', jwk,
-        { name: 'ECDH', namedCurve: 'P-256' },
-        true,
-        []          // no key usages for imported public keys in ECDH
-      );
-    }
+    <!-- Peer fingerprint — shown when you select someone -->
+    <div
+      id="peer-fingerprint-box"
+      style="
+        margin-bottom: 12px;
+        padding: 10px 14px;
+        background: #0f172a;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        display: none;
+      "
+    >
+      <div style="font-size: 11px; color: #64748b; margin-bottom: 4px">
+        PEER FINGERPRINT — ask them to read this aloud to you
+      </div>
+      <div
+        id="peer-fingerprint"
+        style="
+          font-size: 15px;
+          color: #7dd3fc;
+          font-family: monospace;
+          letter-spacing: 0.05em;
+        "
+      >
+        —
+      </div>
+      <div
+        id="peer-fingerprint-hex"
+        style="
+          font-size: 10px;
+          color: #334155;
+          margin-top: 3px;
+          font-family: monospace;
+        "
+      ></div>
+    </div>
+    <div id="peers">
+      <strong>Peers:</strong> <span id="peer-list">none</span>
+    </div>
+    <div id="chat"></div>
+    <div id="input-row">
+      <input id="msg-input" placeholder="Type a message..." disabled />
+      <button id="send-btn" disabled>Send</button>
+    </div>
 
-    async function deriveSharedKey(myPrivateKey, theirPublicKey) {
-      return crypto.subtle.deriveKey(
-        { name: 'ECDH', public: theirPublicKey },
-        myPrivateKey,
-        { name: 'AES-GCM', length: 256 },
-        false,      // not extractable — session key never leaves memory
-        ['encrypt', 'decrypt']
-      );
-    }
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
 
-    async function encrypt(aesKey, plaintext) {
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const encoded = new TextEncoder().encode(plaintext);
-      const ciphertext = await crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv },
-        aesKey,
-        encoded
-      );
-      // Return as base64 strings for easy transport over JSON
-      return {
-        iv: btoa(String.fromCharCode(...iv)),
-        ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext)))
-      };
-    }
+      const statusEl = document.getElementById("status");
+      const myIdEl = document.getElementById("my-id");
+      const myFingerprintEl = document.getElementById("my-fingerprint");
+      const myFingerprintHexEl = document.getElementById("my-fingerprint-hex");
+      const peerFingerprintBoxEl = document.getElementById("peer-fingerprint-box");
+      const peerFingerprintEl = document.getElementById("peer-fingerprint");
+      const peerFingerprintHexEl = document.getElementById("peer-fingerprint-hex");
+      const peerListEl = document.getElementById("peer-list");
+      const chatEl = document.getElementById("chat");
+      const msgInputEl = document.getElementById("msg-input");
+      const sendBtnEl = document.getElementById("send-btn");
 
-    async function decrypt(aesKey, ciphertextB64, ivB64) {
-      const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
-      const ciphertext = Uint8Array.from(atob(ciphertextB64), c => c.charCodeAt(0));
-      const decrypted = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv },
-        aesKey,
-        ciphertext
-      );
-      return new TextDecoder().decode(decrypted);
-    }
+      let myKeyPair = null;
+      let myPublicKeyJwk = null;
+      let mySigningKeyPair = null;
+      let mySigningPublicKeyJwk = null;
+      let selectedPeer = null;
 
-    // ── Init ─────────────────────────────────────────────────────────
+      const peerKeys = {};
+      const peerSigningKeys = {};
+      const messageStates = new Map();
 
-    (async () => {
-      myKeyPair = await generateKeyPair();
-      myPublicKeyJwk = await exportPublicKey(myKeyPair.publicKey);
-      document.getElementById('status').textContent = 'Keys generated. Connecting...';
-      socket.emit('register-key', myPublicKeyJwk);
-    })();
+      async function generateKeyPair() {
+        return crypto.subtle.generateKey(
+          { name: "ECDH", namedCurve: "P-256" },
+          true,
+          ["deriveKey"],
+        );
+      }
 
-    // ── Socket events ─────────────────────────────────────────────────
+      async function generateSigningKeyPair() {
+        return crypto.subtle.generateKey(
+          { name: "ECDSA", namedCurve: "P-256" },
+          true,
+          ["sign", "verify"],
+        );
+      }
 
-    socket.on('connect', () => {
-      document.getElementById('my-id').textContent = 'Your ID: ' + socket.id;
-    });
+      async function exportPublicKey(key) {
+        return crypto.subtle.exportKey("jwk", key);
+      }
 
-    socket.on('peer-list', async (peers) => {
-      const container = document.getElementById('peer-list');
-      container.innerHTML = '';
-      for (const peer of peers) {
-        if (peer.id === socket.id) continue;  // skip self
-        // Import + cache each peer's public key
-        if (!peerKeys[peer.id]) {
-          peerKeys[peer.id] = await importPublicKey(peer.key);
+      async function importPublicKey(jwk) {
+        return crypto.subtle.importKey(
+          "jwk",
+          jwk,
+          { name: "ECDH", namedCurve: "P-256" },
+          true,
+          [],
+        );
+      }
+
+      async function importSigningPublicKey(jwk) {
+        return crypto.subtle.importKey(
+          "jwk",
+          jwk,
+          { name: "ECDSA", namedCurve: "P-256" },
+          true,
+          ["verify"],
+        );
+      }
+
+      async function deriveSharedKey(myPrivateKey, theirPublicKey) {
+        return crypto.subtle.deriveKey(
+          { name: "ECDH", public: theirPublicKey },
+          myPrivateKey,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt", "decrypt"],
+        );
+      }
+
+      async function encrypt(aesKey, plaintext) {
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const encoded = new TextEncoder().encode(plaintext);
+        const ciphertext = await crypto.subtle.encrypt(
+          { name: "AES-GCM", iv },
+          aesKey,
+          encoded,
+        );
+
+        return {
+          iv: btoa(String.fromCharCode(...iv)),
+          ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
+        };
+      }
+
+      async function decrypt(aesKey, ciphertextB64, ivB64) {
+        const iv = Uint8Array.from(atob(ivB64), (char) => char.charCodeAt(0));
+        const ciphertext = Uint8Array.from(atob(ciphertextB64), (char) =>
+          char.charCodeAt(0),
+        );
+        const decrypted = await crypto.subtle.decrypt(
+          { name: "AES-GCM", iv },
+          aesKey,
+          ciphertext,
+        );
+        return new TextDecoder().decode(decrypted);
+      }
+
+      async function signMessage(privateSignKey, plaintext) {
+        const encoded = new TextEncoder().encode(plaintext);
+        const signatureBuffer = await crypto.subtle.sign(
+          { name: "ECDSA", hash: "SHA-256" },
+          privateSignKey,
+          encoded,
+        );
+        return btoa(
+          String.fromCharCode(...new Uint8Array(signatureBuffer)),
+        );
+      }
+
+      async function verifySignature(publicSignKey, plaintext, signatureB64) {
+        const encoded = new TextEncoder().encode(plaintext);
+        const signatureBytes = Uint8Array.from(atob(signatureB64), (char) =>
+          char.charCodeAt(0),
+        );
+
+        return crypto.subtle.verify(
+          { name: "ECDSA", hash: "SHA-256" },
+          publicSignKey,
+          signatureBytes,
+          encoded,
+        );
+      }
+
+      async function getFingerprint(cryptoKey) {
+        const rawBytes = await crypto.subtle.exportKey("raw", cryptoKey);
+        const hashBuffer = await crypto.subtle.digest("SHA-256", rawBytes);
+        const hashBytes = new Uint8Array(hashBuffer);
+        const words = [
+          WORD_LIST[hashBytes[0] % WORD_LIST.length],
+          WORD_LIST[hashBytes[3] % WORD_LIST.length],
+          WORD_LIST[hashBytes[6] % WORD_LIST.length],
+          WORD_LIST[hashBytes[9] % WORD_LIST.length],
+        ];
+        const hex = Array.from(hashBytes.slice(0, 8))
+          .map((byte) => byte.toString(16).padStart(2, "0"))
+          .join("");
+
+        return { words: words.join("-"), hex };
+      }
+
+      const WORD_LIST = [
+        "alpha",
+        "bravo",
+        "cedar",
+        "delta",
+        "eagle",
+        "flame",
+        "globe",
+        "hotel",
+        "india",
+        "jungle",
+        "kite",
+        "lemon",
+        "mango",
+        "north",
+        "ocean",
+        "paper",
+        "quill",
+        "radio",
+        "storm",
+        "table",
+        "ultra",
+        "voice",
+        "water",
+        "xenon",
+        "yacht",
+        "zebra",
+        "amber",
+        "bolt",
+        "crane",
+        "drift",
+        "echo",
+        "frost",
+        "grace",
+        "haze",
+        "iron",
+        "jade",
+        "karma",
+        "lotus",
+        "marble",
+        "nova",
+        "orbit",
+        "pixel",
+        "quartz",
+        "river",
+        "solar",
+        "terra",
+        "unity",
+        "vapor",
+        "wave",
+        "xylem",
+        "yield",
+        "zonal",
+        "apex",
+        "blaze",
+        "comet",
+        "dune",
+        "ember",
+        "forge",
+        "glyph",
+        "helix",
+        "ionic",
+        "jewel",
+        "knot",
+        "lunar",
+        "maple",
+        "nexus",
+        "onyx",
+        "prism",
+        "relay",
+        "shard",
+        "titan",
+        "umbra",
+        "vortex",
+        "warp",
+        "xray",
+        "yoke",
+        "zone",
+        "arch",
+        "beam",
+        "cliff",
+        "dawn",
+        "edge",
+        "fern",
+        "gate",
+        "haven",
+        "isle",
+        "jolt",
+        "lamp",
+        "moss",
+        "node",
+        "opal",
+        "peak",
+        "quake",
+        "reed",
+        "slate",
+        "thorn",
+        "urn",
+        "vale",
+        "wind",
+        "xenith",
+        "yarn",
+        "zinc",
+        "arc",
+        "bay",
+        "crest",
+        "dial",
+        "elm",
+        "ford",
+        "glen",
+        "hull",
+        "ink",
+        "jaw",
+        "kelp",
+        "lake",
+        "mill",
+        "nook",
+        "ore",
+        "pine",
+        "quest",
+        "root",
+        "sand",
+        "tide",
+        "urn2",
+        "vale2",
+        "weld",
+        "xeno",
+        "yew",
+        "zest",
+        "ashen",
+        "birch",
+        "coral",
+        "dusk",
+        "eel",
+        "flint",
+        "gust",
+        "hawk",
+        "ivy",
+        "jasper",
+        "kelvin",
+        "lava",
+        "mist",
+        "nile",
+        "obsid",
+        "peat",
+        "quiver",
+        "rime",
+        "sage",
+        "teal",
+        "umber",
+        "veldt",
+        "wren",
+        "xenon2",
+        "yucca",
+        "zircon",
+        "anvil",
+        "brine",
+        "chalk",
+        "dew",
+        "ebb",
+        "fjord",
+        "gravel",
+        "hail",
+        "ingot",
+        "jade2",
+        "knoll",
+        "loam",
+        "moat",
+        "nick",
+        "ozone",
+        "parch",
+        "quoll",
+        "rush",
+        "scree",
+        "turf",
+        "undine",
+        "virid",
+        "whirl",
+        "xylo",
+        "yarrow",
+        "zilch",
+        "acorn",
+        "basalt",
+        "cobalt",
+        "dross",
+        "erode",
+        "floe",
+        "garnet",
+        "hoar",
+        "iodin",
+        "jasmine",
+        "krill",
+        "lichen",
+        "marl",
+        "nitro",
+        "ochre",
+        "pumice",
+        "quartz2",
+        "runoff",
+        "schist",
+        "talc",
+        "ulmin",
+        "vein",
+        "wadi",
+        "xerath",
+        "ylem",
+        "zonal2",
+        "agate",
+        "berm",
+        "cinder",
+        "dike",
+        "estuary",
+        "flint2",
+        "graben",
+        "horst",
+        "invar",
+        "jet",
+        "kame",
+        "levee",
+        "maars",
+        "nuee",
+        "outcrop",
+        "playa",
+        "quarry",
+        "rift",
+        "scarp",
+        "tephra",
+        "uvala",
+        "varve",
+        "wash",
+        "xenolith",
+        "yardang",
+        "zeolite",
+      ];
+
+      function generateMsgId() {
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      }
+
+      function truncatePeerId(id) {
+        return id.slice(0, 8) + "…";
+      }
+
+      function registerPublicKeys() {
+        if (!myPublicKeyJwk || !mySigningPublicKeyJwk) {
+          return;
         }
-        const btn = document.createElement('button');
-        btn.className = 'peer-btn' + (selectedPeer?.id === peer.id ? ' active' : '');
-        btn.textContent = peer.id.slice(0, 8) + '…';
-        btn.onclick = () => selectPeer(peer.id);
-        container.appendChild(btn);
+
+        socket.emit("register-key", {
+          encryptKey: myPublicKeyJwk,
+          signKey: mySigningPublicKeyJwk,
+        });
       }
-      if (!peers.find(p => p.id !== socket.id)) {
-        container.textContent = 'none (open another tab)';
+
+      function clearSelectedPeer() {
+        selectedPeer = null;
+        msgInputEl.disabled = true;
+        sendBtnEl.disabled = true;
+        peerFingerprintBoxEl.style.display = "none";
+        peerFingerprintEl.textContent = "—";
+        peerFingerprintHexEl.textContent = "";
+
+        document
+          .querySelectorAll(".peer-btn")
+          .forEach((button) => button.classList.remove("active"));
       }
-    });
 
-    socket.on('receive-message', async ({ from, ciphertext, iv, senderPublicKey }) => {
-      try {
-        // Import sender's public key (they send it so we can derive the shared key)
-        const senderCryptoKey = await importPublicKey(senderPublicKey);
-        const sharedKey = await deriveSharedKey(myKeyPair.privateKey, senderCryptoKey);
-        const plaintext = await decrypt(sharedKey, ciphertext, iv);
-        appendMessage(from.slice(0, 8) + '…', plaintext);
-      } catch (e) {
-        appendMessage('system', '[decryption failed: ' + e.message + ']');
+      async function selectPeer(id) {
+        const peerKey = peerKeys[id];
+        if (!peerKey) {
+          return;
+        }
+
+        selectedPeer = {
+          id,
+          key: peerKey,
+          signKey: peerSigningKeys[id],
+        };
+
+        const { words, hex } = await getFingerprint(selectedPeer.key);
+        peerFingerprintEl.textContent = words;
+        peerFingerprintHexEl.textContent = hex;
+        peerFingerprintBoxEl.style.display = "block";
+        msgInputEl.disabled = false;
+        sendBtnEl.disabled = false;
+
+        document
+          .querySelectorAll(".peer-btn")
+          .forEach((button) =>
+            button.classList.toggle("active", button.dataset.peerId === id),
+          );
       }
-    });
 
-    // ── UI helpers ────────────────────────────────────────────────────
+      function createSignatureBadge(verified) {
+        const badge = document.createElement("span");
+        badge.className = "sig-badge " + (verified ? "sig-ok" : "sig-fail");
+        badge.title = verified
+          ? "Signature verified"
+          : "Signature could not be verified";
+        badge.textContent = verified ? "signed" : "unverified";
+        return badge;
+      }
 
-    function selectPeer(id) {
-      selectedPeer = { id, key: peerKeys[id] };
-      document.getElementById('msg-input').disabled = false;
-      document.getElementById('send-btn').disabled = false;
-      document.querySelectorAll('.peer-btn').forEach(b => b.classList.remove('active'));
-      event.target.classList.add('active');
-    }
+      function appendMessage(who, text, options = {}) {
+        const { type = "received", verified = false } = options;
+        const messageEl = document.createElement("div");
+        messageEl.className = "msg msg-" + type;
 
-    function appendMessage(who, text) {
-      const div = document.createElement('div');
-      div.className = 'msg';
-      div.innerHTML = `<span class="who">${who}: </span><span class="text">${text}</span>`;
-      const chat = document.getElementById('chat');
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
-    }
+        const whoEl = document.createElement("span");
+        whoEl.className = "who";
+        whoEl.textContent = who + ":";
 
-    document.getElementById('send-btn').onclick = async () => {
-      const input = document.getElementById('msg-input');
-      const text = input.value.trim();
-      if (!text || !selectedPeer) return;
+        const textEl = document.createElement("span");
+        textEl.className = "text";
+        textEl.textContent = text;
 
-      const sharedKey = await deriveSharedKey(myKeyPair.privateKey, selectedPeer.key);
-      const { ciphertext, iv } = await encrypt(sharedKey, text);
+        messageEl.appendChild(whoEl);
+        messageEl.appendChild(textEl);
 
-      socket.emit('send-message', {
-        to: selectedPeer.id,
-        ciphertext,
-        iv,
-        senderPublicKey: myPublicKeyJwk,  // receiver needs this to derive same shared key
+        if (type !== "error" && who !== "system") {
+          messageEl.appendChild(createSignatureBadge(verified));
+        }
+
+        if (type === "sent") {
+          const tickEl = document.createElement("span");
+          tickEl.className = "tick tick-sent";
+          tickEl.title = "sent";
+          tickEl.textContent = "✓";
+          messageEl.appendChild(tickEl);
+        }
+
+        chatEl.appendChild(messageEl);
+        chatEl.scrollTop = chatEl.scrollHeight;
+        return messageEl;
+      }
+
+      function updateTick(messageEl, status) {
+        const tickEl = messageEl.querySelector(".tick");
+        if (!tickEl) {
+          return;
+        }
+
+        if (status === "delivered") {
+          tickEl.textContent = "✓✓";
+          tickEl.className = "tick tick-delivered";
+          tickEl.title = "delivered";
+        } else if (status === "read") {
+          tickEl.textContent = "✓✓";
+          tickEl.className = "tick tick-read";
+          tickEl.title = "read";
+        }
+      }
+
+      async function init() {
+        try {
+          myKeyPair = await generateKeyPair();
+          myPublicKeyJwk = await exportPublicKey(myKeyPair.publicKey);
+          mySigningKeyPair = await generateSigningKeyPair();
+          mySigningPublicKeyJwk = await exportPublicKey(
+            mySigningKeyPair.publicKey,
+          );
+
+          const { words, hex } = await getFingerprint(myKeyPair.publicKey);
+          myFingerprintEl.textContent = words;
+          myFingerprintHexEl.textContent = hex;
+          statusEl.textContent = "Keys generated. Connecting...";
+
+          if (socket.connected) {
+            myIdEl.textContent = "Your ID: " + socket.id;
+            statusEl.textContent = "Connected. Select a peer.";
+            registerPublicKeys();
+          }
+        } catch (error) {
+          statusEl.textContent = "Key setup failed.";
+          appendMessage("system", `[setup failed: ${error.message}]`, {
+            type: "error",
+          });
+        }
+      }
+
+      socket.on("connect", () => {
+        myIdEl.textContent = "Your ID: " + socket.id;
+        statusEl.textContent = myPublicKeyJwk
+          ? "Connected. Select a peer."
+          : "Connected. Preparing keys...";
+        registerPublicKeys();
       });
 
-      appendMessage('you', text);
-      input.value = '';
-    };
+      socket.on("disconnect", () => {
+        statusEl.textContent = "Disconnected. Reconnecting...";
+        clearSelectedPeer();
+      });
 
-    document.getElementById('msg-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') document.getElementById('send-btn').click();
-    });
-  </script>
-</body>
+      socket.on("peer-list", async (peers) => {
+        const connectedPeerIds = new Set();
+        peerListEl.innerHTML = "";
+
+        for (const peer of peers) {
+          if (peer.id === socket.id) {
+            continue;
+          }
+
+          if (!peer.encryptKey || !peer.signKey) {
+            continue;
+          }
+
+          try {
+            connectedPeerIds.add(peer.id);
+            peerKeys[peer.id] = await importPublicKey(peer.encryptKey);
+            peerSigningKeys[peer.id] = await importSigningPublicKey(
+              peer.signKey,
+            );
+          } catch (error) {
+            console.warn("Failed to import peer keys:", error);
+            continue;
+          }
+
+          const button = document.createElement("button");
+          button.type = "button";
+          button.dataset.peerId = peer.id;
+          button.className =
+            "peer-btn" + (selectedPeer?.id === peer.id ? " active" : "");
+          button.textContent = truncatePeerId(peer.id);
+          button.onclick = () => selectPeer(peer.id);
+          peerListEl.appendChild(button);
+        }
+
+        for (const peerId of Object.keys(peerKeys)) {
+          if (!connectedPeerIds.has(peerId)) {
+            delete peerKeys[peerId];
+            delete peerSigningKeys[peerId];
+          }
+        }
+
+        if (selectedPeer && connectedPeerIds.has(selectedPeer.id)) {
+          selectedPeer = {
+            id: selectedPeer.id,
+            key: peerKeys[selectedPeer.id],
+            signKey: peerSigningKeys[selectedPeer.id],
+          };
+        } else if (selectedPeer) {
+          clearSelectedPeer();
+        }
+
+        if (connectedPeerIds.size === 0) {
+          peerListEl.textContent = "none (open another tab)";
+        }
+      });
+
+      socket.on(
+        "receive-message",
+        async ({
+          from,
+          ciphertext,
+          iv,
+          senderPublicKey,
+          senderSigningKey,
+          signature,
+          msgId,
+        }) => {
+          socket.emit("msg-delivered", { to: from, msgId });
+
+          try {
+            const senderCryptoKey =
+              peerKeys[from] || (await importPublicKey(senderPublicKey));
+            peerKeys[from] = senderCryptoKey;
+
+            const sharedKey = await deriveSharedKey(
+              myKeyPair.privateKey,
+              senderCryptoKey,
+            );
+            const plaintext = await decrypt(sharedKey, ciphertext, iv);
+
+            let verified = false;
+            if (senderSigningKey && signature) {
+              const signingKey =
+                peerSigningKeys[from] ||
+                (await importSigningPublicKey(senderSigningKey));
+              peerSigningKeys[from] = signingKey;
+              verified = await verifySignature(signingKey, plaintext, signature);
+            }
+
+            appendMessage(truncatePeerId(from), plaintext, {
+              type: "received",
+              verified,
+            });
+            socket.emit("msg-read", { to: from, msgId });
+          } catch (error) {
+            appendMessage("system", `[decryption failed: ${error.message}]`, {
+              type: "error",
+            });
+          }
+        },
+      );
+
+      socket.on("msg-delivered", ({ msgId }) => {
+        const state = messageStates.get(msgId);
+        if (!state) {
+          return;
+        }
+
+        state.status = "delivered";
+        updateTick(state.el, "delivered");
+      });
+
+      socket.on("msg-read", ({ msgId }) => {
+        const state = messageStates.get(msgId);
+        if (!state) {
+          return;
+        }
+
+        state.status = "read";
+        updateTick(state.el, "read");
+      });
+
+      sendBtnEl.onclick = async () => {
+        const text = msgInputEl.value.trim();
+        if (!text || !selectedPeer) {
+          return;
+        }
+
+        try {
+          const sharedKey = await deriveSharedKey(
+            myKeyPair.privateKey,
+            selectedPeer.key,
+          );
+          const { ciphertext, iv } = await encrypt(sharedKey, text);
+          const signature = await signMessage(mySigningKeyPair.privateKey, text);
+          const msgId = generateMsgId();
+
+          socket.emit("send-message", {
+            to: selectedPeer.id,
+            ciphertext,
+            iv,
+            senderPublicKey: myPublicKeyJwk,
+            senderSigningKey: mySigningPublicKeyJwk,
+            signature,
+            msgId,
+          });
+
+          const messageEl = appendMessage("you", text, {
+            type: "sent",
+            verified: true,
+          });
+
+          messageStates.set(msgId, {
+            status: "sent",
+            el: messageEl,
+            to: selectedPeer.id,
+          });
+
+          msgInputEl.value = "";
+        } catch (error) {
+          appendMessage("system", `[send failed: ${error.message}]`, {
+            type: "error",
+          });
+        }
+      };
+
+      msgInputEl.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          sendBtnEl.click();
+        }
+      });
+
+      init();
+    </script>
+  </body>
 </html>
