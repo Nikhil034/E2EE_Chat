@@ -2,238 +2,484 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>E2EE Chat</title>
     <style>
+      :root {
+        --bg: #0d0d0d;
+        --panel: #0f172a;
+        --panel-border: #1e293b;
+        --muted: #64748b;
+        --text: #e2e8f0;
+        --accent: #4ade80;
+        --accent-soft: #052e16;
+        --info: #7dd3fc;
+        --bubble-in: #1e293b;
+        --bubble-out: #1e3a2f;
+        --danger-bg: #450a0a;
+        --danger-text: #fecaca;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         font-family: monospace;
-        max-width: 700px;
+        max-width: 760px;
         margin: 40px auto;
-        padding: 0 20px;
-        background: #0d0d0d;
-        color: #e0e0e0;
+        padding: 0 20px 40px;
+        background: var(--bg);
+        color: var(--text);
       }
+
       h2 {
-        color: #4ade80;
+        margin-bottom: 10px;
+        color: var(--accent);
       }
+
       #status {
         color: #888;
         font-size: 13px;
-        margin-bottom: 16px;
+        margin-bottom: 10px;
       }
-      #peers {
-        margin: 16px 0;
-      }
-      .peer-btn {
-        background: #1a1a2e;
-        color: #7dd3fc;
-        border: 1px solid #334155;
-        padding: 6px 12px;
-        margin: 4px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-family: monospace;
-      }
-      .peer-btn.active {
-        border-color: #4ade80;
-        color: #4ade80;
-      }
-      #chat {
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 12px;
-        min-height: 200px;
-        max-height: 360px;
-        overflow-y: auto;
-        margin: 16px 0;
-      }
-      .msg {
-        margin: 6px 0;
-        font-size: 13px;
-      }
-      .msg .who {
-        color: #94a3b8;
-      }
-      .msg .text {
-        color: #e2e8f0;
-      }
-      #input-row {
-        display: flex;
-        gap: 8px;
-      }
-      #msg-input {
-        flex: 1;
-        background: #1a1a1a;
-        border: 1px solid #334155;
-        color: #e0e0e0;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-family: monospace;
-      }
-      button#send-btn {
-        background: #166534;
-        color: #4ade80;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-      }
+
       #my-id {
         font-size: 12px;
-        color: #64748b;
+        color: var(--muted);
+        margin-bottom: 14px;
       }
-      .msg {
+
+      .topbar {
         display: flex;
-        align-items: baseline;
-        gap: 6px;
-        margin: 6px 0;
-        font-size: 13px;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
       }
 
-      /* Outgoing messages align right */
-      .msg-sent {
-        flex-direction: row-reverse;
-      }
-      .msg-sent .who {
-        display: none;
-      } /* hide "you:" label on sent */
-      .msg-sent .text {
-        background: #1e3a2f;
-        color: #a7f3d0;
-        padding: 5px 10px;
-        border-radius: 10px 10px 2px 10px;
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 34px;
+        padding: 7px 12px;
+        border: 1px solid var(--panel-border);
+        border-radius: 999px;
+        background: var(--panel);
+        color: var(--text);
+        font-size: 12px;
       }
 
-      /* Incoming messages align left */
-      .msg-received .text {
-        background: #1e293b;
-        color: #e2e8f0;
-        padding: 5px 10px;
-        border-radius: 10px 10px 10px 2px;
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
       }
-      .msg-error .text {
-        background: #450a0a;
-        color: #fecaca;
-        padding: 5px 10px;
+
+      .toolbar button {
+        background: transparent;
+        color: var(--info);
+        border: 1px solid #334155;
+        padding: 7px 12px;
+        border-radius: 999px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+
+      .toolbar button:disabled {
+        opacity: 0.55;
+        cursor: default;
+      }
+
+      .toolbar span {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .card {
+        margin: 0 0 14px;
+        padding: 12px 14px;
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
         border-radius: 10px;
       }
 
-      /* Tick states */
-      .tick {
+      .card-label {
+        margin-bottom: 6px;
         font-size: 11px;
-        font-family: monospace;
+        color: var(--muted);
+      }
+
+      .fingerprint-value {
+        font-size: 15px;
+        letter-spacing: 0.05em;
+      }
+
+      #my-fingerprint {
+        color: var(--accent);
+      }
+
+      #peer-fingerprint {
+        color: var(--info);
+      }
+
+      .fingerprint-hex {
+        margin-top: 4px;
+        font-size: 10px;
+        color: #334155;
+      }
+
+      .peer-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 6px;
+      }
+
+      .presence-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 9px;
+        border-radius: 999px;
+        border: 1px solid #334155;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .presence-badge.online {
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-color: #166534;
+      }
+
+      .presence-badge.typing {
+        color: var(--info);
+        background: #082f49;
+        border-color: #0f766e;
+      }
+
+      .presence-badge.offline {
+        color: var(--muted);
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      #peer-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .peer-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        min-width: 132px;
+        padding: 10px 12px;
+        background: #111827;
+        color: var(--info);
+        border: 1px solid #334155;
+        border-radius: 10px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+
+      .peer-btn.active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .peer-name {
+        font-size: 13px;
+      }
+
+      .peer-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--accent);
+      }
+
+      .status-dot.typing {
+        background: var(--info);
+      }
+
+      #chat {
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 14px;
+        min-height: 240px;
+        max-height: 420px;
+        overflow-y: auto;
+        margin: 16px 0 10px;
+        background: #0b1220;
+      }
+
+      .msg {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        margin: 0 0 12px;
+        font-size: 13px;
+      }
+
+      .message-row {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        max-width: 100%;
+        flex-wrap: wrap;
+      }
+
+      .msg .who {
+        color: #94a3b8;
+      }
+
+      .msg .text {
+        padding: 6px 10px;
+        border-radius: 12px;
+        word-break: break-word;
+      }
+
+      .msg-received .text {
+        background: var(--bubble-in);
+        color: var(--text);
+        border-radius: 12px 12px 12px 3px;
+      }
+
+      .msg-sent {
+        align-items: flex-end;
+      }
+
+      .msg-sent .message-row {
+        flex-direction: row-reverse;
+      }
+
+      .msg-sent .who {
+        display: none;
+      }
+
+      .msg-sent .text {
+        background: var(--bubble-out);
+        color: #a7f3d0;
+        border-radius: 12px 12px 3px 12px;
+      }
+
+      .msg-error .text {
+        background: var(--danger-bg);
+        color: var(--danger-text);
+        border-radius: 10px;
+      }
+
+      .tick {
         min-width: 18px;
+        font-size: 11px;
         transition: color 0.3s;
       }
+
       .tick-sent {
         color: #334155;
-      } /* grey — single tick */
+      }
+
       .tick-delivered {
         color: #64748b;
-      } /* grey — double tick */
+      }
+
       .tick-read {
         color: #38bdf8;
-      } /* blue — double tick */
+      }
+
       .sig-badge {
-        font-size: 10px;
-        font-weight: 500;
         padding: 2px 7px;
-        border-radius: 20px;
-        font-family: monospace;
+        border-radius: 999px;
+        font-size: 10px;
         white-space: nowrap;
       }
 
       .sig-ok {
-        background: #052e16;
-        color: #4ade80;
+        background: var(--accent-soft);
+        color: var(--accent);
         border: 1px solid #166534;
       }
 
       .sig-fail {
-        background: #450a0a;
+        background: var(--danger-bg);
         color: #f87171;
         border: 1px solid #7f1d1d;
+      }
+
+      .reaction-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-height: 20px;
+      }
+
+      .reaction-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid #334155;
+        background: #111827;
+        font-size: 11px;
+        color: var(--text);
+      }
+
+      .reaction-chip.mine {
+        color: var(--info);
+      }
+
+      .reaction-chip.remote {
+        color: var(--accent);
+      }
+
+      .reaction-picker {
+        display: flex;
+        gap: 6px;
+      }
+
+      .reaction-btn {
+        border: 1px solid #334155;
+        background: transparent;
+        color: var(--text);
+        border-radius: 999px;
+        padding: 2px 8px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .reaction-btn.active {
+        border-color: var(--info);
+        background: #082f49;
+      }
+
+      #typing-indicator {
+        min-height: 20px;
+        margin-bottom: 10px;
+        font-size: 12px;
+        color: var(--info);
+      }
+
+      #input-row {
+        display: flex;
+        gap: 8px;
+      }
+
+      #msg-input {
+        flex: 1;
+        background: #111827;
+        border: 1px solid #334155;
+        color: var(--text);
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-family: inherit;
+      }
+
+      #send-btn {
+        background: #166534;
+        color: var(--accent);
+        border: none;
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+
+      @media (max-width: 640px) {
+        body {
+          margin: 20px auto;
+          padding: 0 14px 28px;
+        }
+
+        .topbar,
+        .section-header,
+        .peer-card-header,
+        #input-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .toolbar {
+          justify-content: flex-start;
+        }
+
+        #send-btn {
+          width: 100%;
+        }
+
+        .peer-btn {
+          min-width: 100%;
+        }
       }
     </style>
   </head>
   <body>
     <h2>E2EE Chat</h2>
     <div id="status">Generating keys...</div>
-    <!-- Your identity -->
-    <div id="my-id" style="font-size: 12px; color: #64748b"></div>
-    <div
-      style="
-        margin: 10px 0 16px;
-        padding: 10px 14px;
-        background: #0f172a;
-        border: 1px solid #1e293b;
-        border-radius: 8px;
-      "
-    >
-      <div style="font-size: 11px; color: #64748b; margin-bottom: 4px">
-        YOUR KEY FINGERPRINT — read this aloud to verify your identity
+    <div id="my-id"></div>
+
+    <div class="topbar">
+      <div id="presence-summary" class="pill">0 peers online</div>
+      <div class="toolbar">
+        <button id="notifications-btn" type="button">Enable Notifications</button>
+        <span id="notifications-status">Notifications are off.</span>
       </div>
-      <div
-        id="my-fingerprint"
-        style="
-          font-size: 15px;
-          color: #4ade80;
-          font-family: monospace;
-          letter-spacing: 0.05em;
-        "
-      >
-        computing...
-      </div>
-      <div
-        id="my-fingerprint-hex"
-        style="
-          font-size: 10px;
-          color: #334155;
-          margin-top: 3px;
-          font-family: monospace;
-        "
-      ></div>
     </div>
 
-    <!-- Peer fingerprint — shown when you select someone -->
-    <div
-      id="peer-fingerprint-box"
-      style="
-        margin-bottom: 12px;
-        padding: 10px 14px;
-        background: #0f172a;
-        border: 1px solid #1e293b;
-        border-radius: 8px;
-        display: none;
-      "
-    >
-      <div style="font-size: 11px; color: #64748b; margin-bottom: 4px">
-        PEER FINGERPRINT — ask them to read this aloud to you
+    <div class="card">
+      <div class="card-label">
+        YOUR KEY FINGERPRINT - read this aloud to verify your identity
       </div>
-      <div
-        id="peer-fingerprint"
-        style="
-          font-size: 15px;
-          color: #7dd3fc;
-          font-family: monospace;
-          letter-spacing: 0.05em;
-        "
-      >
-        —
+      <div id="my-fingerprint" class="fingerprint-value">computing...</div>
+      <div id="my-fingerprint-hex" class="fingerprint-hex"></div>
+    </div>
+
+    <div id="peer-fingerprint-box" class="card" hidden>
+      <div class="peer-card-header">
+        <div class="card-label">
+          PEER FINGERPRINT - ask them to read this aloud to you
+        </div>
+        <span id="selected-peer-status" class="presence-badge offline">offline</span>
       </div>
-      <div
-        id="peer-fingerprint-hex"
-        style="
-          font-size: 10px;
-          color: #334155;
-          margin-top: 3px;
-          font-family: monospace;
-        "
-      ></div>
+      <div id="peer-fingerprint" class="fingerprint-value">-</div>
+      <div id="peer-fingerprint-hex" class="fingerprint-hex"></div>
     </div>
-    <div id="peers">
-      <strong>Peers:</strong> <span id="peer-list">none</span>
+
+    <div id="peers" class="card">
+      <div class="section-header">
+        <strong>Peers</strong>
+        <span class="card-label">Select one to start chatting</span>
+      </div>
+      <div id="peer-list">none (open another tab)</div>
     </div>
+
     <div id="chat"></div>
+    <div id="typing-indicator"></div>
+
     <div id="input-row">
       <input id="msg-input" placeholder="Type a message..." disabled />
       <button id="send-btn" disabled>Send</button>
@@ -243,15 +489,22 @@
     <script>
       const socket = io();
 
+      const QUICK_REACTIONS = ["❤️", "👍", "😂", "🔥"];
+
       const statusEl = document.getElementById("status");
       const myIdEl = document.getElementById("my-id");
+      const presenceSummaryEl = document.getElementById("presence-summary");
+      const notificationsBtnEl = document.getElementById("notifications-btn");
+      const notificationsStatusEl = document.getElementById("notifications-status");
       const myFingerprintEl = document.getElementById("my-fingerprint");
       const myFingerprintHexEl = document.getElementById("my-fingerprint-hex");
       const peerFingerprintBoxEl = document.getElementById("peer-fingerprint-box");
+      const selectedPeerStatusEl = document.getElementById("selected-peer-status");
       const peerFingerprintEl = document.getElementById("peer-fingerprint");
       const peerFingerprintHexEl = document.getElementById("peer-fingerprint-hex");
       const peerListEl = document.getElementById("peer-list");
       const chatEl = document.getElementById("chat");
+      const typingIndicatorEl = document.getElementById("typing-indicator");
       const msgInputEl = document.getElementById("msg-input");
       const sendBtnEl = document.getElementById("send-btn");
 
@@ -260,10 +513,15 @@
       let mySigningKeyPair = null;
       let mySigningPublicKeyJwk = null;
       let selectedPeer = null;
+      let visiblePeerIds = [];
+      let outgoingTypingPeerId = null;
+      let outgoingTypingTimer = null;
 
       const peerKeys = {};
       const peerSigningKeys = {};
+      const typingPeers = new Set();
       const messageStates = new Map();
+      const messageRegistry = new Map();
 
       async function generateKeyPair() {
         return crypto.subtle.generateKey(
@@ -340,6 +598,7 @@
           aesKey,
           ciphertext,
         );
+
         return new TextDecoder().decode(decrypted);
       }
 
@@ -350,6 +609,7 @@
           privateSignKey,
           encoded,
         );
+
         return btoa(
           String.fromCharCode(...new Uint8Array(signatureBuffer)),
         );
@@ -626,7 +886,147 @@
       }
 
       function truncatePeerId(id) {
-        return id.slice(0, 8) + "…";
+        return id.slice(0, 8) + "...";
+      }
+
+      function getSentMessageKey(msgId) {
+        return "sent:" + msgId;
+      }
+
+      function getReceivedMessageKey(peerId, msgId) {
+        return "received:" + peerId + ":" + msgId;
+      }
+
+      function notificationsSupported() {
+        return "Notification" in window;
+      }
+
+      function updateNotificationUI() {
+        if (!notificationsSupported()) {
+          notificationsBtnEl.disabled = true;
+          notificationsStatusEl.textContent =
+            "Browser notifications are not supported here.";
+          return;
+        }
+
+        if (Notification.permission === "granted") {
+          notificationsBtnEl.disabled = true;
+          notificationsBtnEl.textContent = "Notifications Enabled";
+          notificationsStatusEl.textContent =
+            "Browser notifications are enabled for incoming messages.";
+          return;
+        }
+
+        if (Notification.permission === "denied") {
+          notificationsBtnEl.disabled = true;
+          notificationsStatusEl.textContent =
+            "Notifications are blocked in this browser.";
+          return;
+        }
+
+        notificationsBtnEl.disabled = false;
+        notificationsBtnEl.textContent = "Enable Notifications";
+        notificationsStatusEl.textContent =
+          "Enable browser notifications for new messages and reactions.";
+      }
+
+      async function requestNotifications() {
+        if (!notificationsSupported()) {
+          return;
+        }
+
+        await Notification.requestPermission();
+        updateNotificationUI();
+      }
+
+      function maybeShowNotification(title, body, tag) {
+        if (!notificationsSupported() || Notification.permission !== "granted") {
+          return;
+        }
+
+        if (!document.hidden && document.hasFocus()) {
+          return;
+        }
+
+        const notification = new Notification(title, { body, tag });
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+      }
+
+      function updatePresenceSummary() {
+        const count = visiblePeerIds.length;
+        presenceSummaryEl.textContent =
+          count === 1 ? "1 peer online" : `${count} peers online`;
+      }
+
+      function updateSelectedPeerStatus() {
+        if (!selectedPeer) {
+          selectedPeerStatusEl.textContent = "offline";
+          selectedPeerStatusEl.className = "presence-badge offline";
+          typingIndicatorEl.textContent = "";
+          return;
+        }
+
+        if (typingPeers.has(selectedPeer.id)) {
+          selectedPeerStatusEl.textContent = "typing";
+          selectedPeerStatusEl.className = "presence-badge typing";
+          typingIndicatorEl.textContent =
+            truncatePeerId(selectedPeer.id) + " is typing...";
+          return;
+        }
+
+        selectedPeerStatusEl.textContent = "online";
+        selectedPeerStatusEl.className = "presence-badge online";
+        typingIndicatorEl.textContent = "";
+      }
+
+      function createPeerButton(peerId) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.peerId = peerId;
+        button.className =
+          "peer-btn" + (selectedPeer?.id === peerId ? " active" : "");
+
+        const nameEl = document.createElement("span");
+        nameEl.className = "peer-name";
+        nameEl.textContent = truncatePeerId(peerId);
+
+        const metaEl = document.createElement("span");
+        metaEl.className = "peer-meta";
+
+        const dotEl = document.createElement("span");
+        dotEl.className =
+          "status-dot" + (typingPeers.has(peerId) ? " typing" : "");
+
+        const statusTextEl = document.createElement("span");
+        statusTextEl.textContent = typingPeers.has(peerId) ? "typing..." : "online";
+
+        metaEl.appendChild(dotEl);
+        metaEl.appendChild(statusTextEl);
+        button.appendChild(nameEl);
+        button.appendChild(metaEl);
+        button.onclick = () => selectPeer(peerId);
+
+        return button;
+      }
+
+      function renderPeerList() {
+        peerListEl.textContent = "";
+        updatePresenceSummary();
+
+        if (visiblePeerIds.length === 0) {
+          peerListEl.textContent = "none (open another tab)";
+          updateSelectedPeerStatus();
+          return;
+        }
+
+        for (const peerId of visiblePeerIds) {
+          peerListEl.appendChild(createPeerButton(peerId));
+        }
+
+        updateSelectedPeerStatus();
       }
 
       function registerPublicKeys() {
@@ -641,22 +1041,28 @@
       }
 
       function clearSelectedPeer() {
+        if (outgoingTypingPeerId) {
+          stopOutgoingTyping(outgoingTypingPeerId);
+        }
+
         selectedPeer = null;
         msgInputEl.disabled = true;
         sendBtnEl.disabled = true;
-        peerFingerprintBoxEl.style.display = "none";
-        peerFingerprintEl.textContent = "—";
+        peerFingerprintBoxEl.hidden = true;
+        peerFingerprintEl.textContent = "-";
         peerFingerprintHexEl.textContent = "";
-
-        document
-          .querySelectorAll(".peer-btn")
-          .forEach((button) => button.classList.remove("active"));
+        updateSelectedPeerStatus();
+        renderPeerList();
       }
 
       async function selectPeer(id) {
         const peerKey = peerKeys[id];
         if (!peerKey) {
           return;
+        }
+
+        if (outgoingTypingPeerId && outgoingTypingPeerId !== id) {
+          stopOutgoingTyping(outgoingTypingPeerId);
         }
 
         selectedPeer = {
@@ -668,31 +1074,66 @@
         const { words, hex } = await getFingerprint(selectedPeer.key);
         peerFingerprintEl.textContent = words;
         peerFingerprintHexEl.textContent = hex;
-        peerFingerprintBoxEl.style.display = "block";
+        peerFingerprintBoxEl.hidden = false;
         msgInputEl.disabled = false;
         sendBtnEl.disabled = false;
-
-        document
-          .querySelectorAll(".peer-btn")
-          .forEach((button) =>
-            button.classList.toggle("active", button.dataset.peerId === id),
-          );
+        renderPeerList();
       }
 
       function createSignatureBadge(verified) {
         const badge = document.createElement("span");
         badge.className = "sig-badge " + (verified ? "sig-ok" : "sig-fail");
+        badge.textContent = verified ? "signed" : "unverified";
         badge.title = verified
           ? "Signature verified"
           : "Signature could not be verified";
-        badge.textContent = verified ? "signed" : "unverified";
         return badge;
       }
 
+      function createReactionChip(emoji, label, variant) {
+        const chip = document.createElement("span");
+        chip.className = "reaction-chip " + variant;
+        chip.textContent = `${emoji} ${label}`;
+        return chip;
+      }
+
+      function renderReactionState(entry) {
+        entry.reactionStripEl.textContent = "";
+
+        if (entry.localReaction) {
+          entry.reactionStripEl.appendChild(
+            createReactionChip(entry.localReaction, "you reacted", "mine"),
+          );
+        }
+
+        if (entry.remoteReaction) {
+          entry.reactionStripEl.appendChild(
+            createReactionChip(entry.remoteReaction, "reacted", "remote"),
+          );
+        }
+
+        for (const button of entry.reactionButtons) {
+          button.classList.toggle(
+            "active",
+            entry.localReaction === button.dataset.emoji,
+          );
+        }
+      }
+
       function appendMessage(who, text, options = {}) {
-        const { type = "received", verified = false } = options;
+        const {
+          type = "received",
+          verified = false,
+          msgId = null,
+          peerId = null,
+          messageKey = null,
+        } = options;
+
         const messageEl = document.createElement("div");
         messageEl.className = "msg msg-" + type;
+
+        const rowEl = document.createElement("div");
+        rowEl.className = "message-row";
 
         const whoEl = document.createElement("span");
         whoEl.className = "who";
@@ -702,11 +1143,11 @@
         textEl.className = "text";
         textEl.textContent = text;
 
-        messageEl.appendChild(whoEl);
-        messageEl.appendChild(textEl);
+        rowEl.appendChild(whoEl);
+        rowEl.appendChild(textEl);
 
         if (type !== "error" && who !== "system") {
-          messageEl.appendChild(createSignatureBadge(verified));
+          rowEl.appendChild(createSignatureBadge(verified));
         }
 
         if (type === "sent") {
@@ -714,11 +1155,52 @@
           tickEl.className = "tick tick-sent";
           tickEl.title = "sent";
           tickEl.textContent = "✓";
-          messageEl.appendChild(tickEl);
+          rowEl.appendChild(tickEl);
+        }
+
+        messageEl.appendChild(rowEl);
+
+        const reactionStripEl = document.createElement("div");
+        reactionStripEl.className = "reaction-strip";
+        messageEl.appendChild(reactionStripEl);
+
+        const reactionButtons = [];
+        if (type === "received" && peerId && msgId && messageKey) {
+          const reactionPickerEl = document.createElement("div");
+          reactionPickerEl.className = "reaction-picker";
+
+          for (const emoji of QUICK_REACTIONS) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "reaction-btn";
+            button.dataset.emoji = emoji;
+            button.textContent = emoji;
+            button.onclick = () => toggleReaction(messageKey, emoji);
+            reactionPickerEl.appendChild(button);
+            reactionButtons.push(button);
+          }
+
+          messageEl.appendChild(reactionPickerEl);
         }
 
         chatEl.appendChild(messageEl);
         chatEl.scrollTop = chatEl.scrollHeight;
+
+        if (messageKey) {
+          const entry = {
+            type,
+            msgId,
+            peerId,
+            reactionStripEl,
+            reactionButtons,
+            localReaction: null,
+            remoteReaction: null,
+          };
+
+          messageRegistry.set(messageKey, entry);
+          renderReactionState(entry);
+        }
+
         return messageEl;
       }
 
@@ -739,7 +1221,90 @@
         }
       }
 
+      function emitReaction(entry, emoji, action) {
+        socket.emit("message-reaction", {
+          to: entry.peerId,
+          msgId: entry.msgId,
+          emoji,
+          action,
+        });
+      }
+
+      function toggleReaction(messageKey, emoji) {
+        const entry = messageRegistry.get(messageKey);
+        if (!entry) {
+          return;
+        }
+
+        if (entry.localReaction === emoji) {
+          entry.localReaction = null;
+          emitReaction(entry, emoji, "remove");
+          renderReactionState(entry);
+          return;
+        }
+
+        if (entry.localReaction) {
+          emitReaction(entry, entry.localReaction, "remove");
+        }
+
+        entry.localReaction = emoji;
+        emitReaction(entry, emoji, "add");
+        renderReactionState(entry);
+      }
+
+      function stopOutgoingTyping(targetPeerId = outgoingTypingPeerId) {
+        if (outgoingTypingTimer) {
+          window.clearTimeout(outgoingTypingTimer);
+          outgoingTypingTimer = null;
+        }
+
+        if (!targetPeerId) {
+          outgoingTypingPeerId = null;
+          return;
+        }
+
+        socket.emit("typing-stop", { to: targetPeerId });
+        if (outgoingTypingPeerId === targetPeerId) {
+          outgoingTypingPeerId = null;
+        }
+      }
+
+      function scheduleTypingTimeout(targetPeerId) {
+        if (outgoingTypingTimer) {
+          window.clearTimeout(outgoingTypingTimer);
+        }
+
+        outgoingTypingTimer = window.setTimeout(() => {
+          stopOutgoingTyping(targetPeerId);
+        }, 1200);
+      }
+
+      function handleComposerInput() {
+        if (!selectedPeer) {
+          return;
+        }
+
+        const value = msgInputEl.value.trim();
+        if (!value) {
+          stopOutgoingTyping();
+          return;
+        }
+
+        if (outgoingTypingPeerId && outgoingTypingPeerId !== selectedPeer.id) {
+          stopOutgoingTyping(outgoingTypingPeerId);
+        }
+
+        if (outgoingTypingPeerId !== selectedPeer.id) {
+          socket.emit("typing-start", { to: selectedPeer.id });
+          outgoingTypingPeerId = selectedPeer.id;
+        }
+
+        scheduleTypingTimeout(selectedPeer.id);
+      }
+
       async function init() {
+        updateNotificationUI();
+
         try {
           myKeyPair = await generateKeyPair();
           myPublicKeyJwk = await exportPublicKey(myKeyPair.publicKey);
@@ -776,12 +1341,19 @@
 
       socket.on("disconnect", () => {
         statusEl.textContent = "Disconnected. Reconnecting...";
+        visiblePeerIds = [];
+        typingPeers.clear();
+
+        for (const peerId of Object.keys(peerKeys)) {
+          delete peerKeys[peerId];
+          delete peerSigningKeys[peerId];
+        }
+
         clearSelectedPeer();
       });
 
       socket.on("peer-list", async (peers) => {
-        const connectedPeerIds = new Set();
-        peerListEl.innerHTML = "";
+        const connectedPeerIds = [];
 
         for (const peer of peers) {
           if (peer.id === socket.id) {
@@ -793,46 +1365,51 @@
           }
 
           try {
-            connectedPeerIds.add(peer.id);
             peerKeys[peer.id] = await importPublicKey(peer.encryptKey);
             peerSigningKeys[peer.id] = await importSigningPublicKey(
               peer.signKey,
             );
+            connectedPeerIds.push(peer.id);
           } catch (error) {
             console.warn("Failed to import peer keys:", error);
-            continue;
           }
-
-          const button = document.createElement("button");
-          button.type = "button";
-          button.dataset.peerId = peer.id;
-          button.className =
-            "peer-btn" + (selectedPeer?.id === peer.id ? " active" : "");
-          button.textContent = truncatePeerId(peer.id);
-          button.onclick = () => selectPeer(peer.id);
-          peerListEl.appendChild(button);
         }
 
         for (const peerId of Object.keys(peerKeys)) {
-          if (!connectedPeerIds.has(peerId)) {
+          if (!connectedPeerIds.includes(peerId)) {
             delete peerKeys[peerId];
             delete peerSigningKeys[peerId];
+            typingPeers.delete(peerId);
           }
         }
 
-        if (selectedPeer && connectedPeerIds.has(selectedPeer.id)) {
+        visiblePeerIds = connectedPeerIds;
+
+        if (selectedPeer && visiblePeerIds.includes(selectedPeer.id)) {
           selectedPeer = {
             id: selectedPeer.id,
             key: peerKeys[selectedPeer.id],
             signKey: peerSigningKeys[selectedPeer.id],
           };
+          const { words, hex } = await getFingerprint(selectedPeer.key);
+          peerFingerprintEl.textContent = words;
+          peerFingerprintHexEl.textContent = hex;
         } else if (selectedPeer) {
           clearSelectedPeer();
+          return;
         }
 
-        if (connectedPeerIds.size === 0) {
-          peerListEl.textContent = "none (open another tab)";
-        }
+        renderPeerList();
+      });
+
+      socket.on("typing-start", ({ from }) => {
+        typingPeers.add(from);
+        renderPeerList();
+      });
+
+      socket.on("typing-stop", ({ from }) => {
+        typingPeers.delete(from);
+        renderPeerList();
       });
 
       socket.on(
@@ -847,6 +1424,7 @@
           msgId,
         }) => {
           socket.emit("msg-delivered", { to: from, msgId });
+          typingPeers.delete(from);
 
           try {
             const senderCryptoKey =
@@ -868,18 +1446,48 @@
               verified = await verifySignature(signingKey, plaintext, signature);
             }
 
+            const messageKey = getReceivedMessageKey(from, msgId);
             appendMessage(truncatePeerId(from), plaintext, {
               type: "received",
               verified,
+              msgId,
+              peerId: from,
+              messageKey,
             });
+
             socket.emit("msg-read", { to: from, msgId });
+            maybeShowNotification(
+              `New message from ${truncatePeerId(from)}`,
+              plaintext,
+              `message-${from}`,
+            );
           } catch (error) {
             appendMessage("system", `[decryption failed: ${error.message}]`, {
               type: "error",
             });
           }
+
+          renderPeerList();
         },
       );
+
+      socket.on("message-reaction", ({ from, msgId, emoji, action }) => {
+        const entry = messageRegistry.get(getSentMessageKey(msgId));
+        if (!entry) {
+          return;
+        }
+
+        entry.remoteReaction = action === "remove" ? null : emoji;
+        renderReactionState(entry);
+
+        if (action === "add") {
+          maybeShowNotification(
+            `${truncatePeerId(from)} reacted ${emoji}`,
+            "to one of your messages",
+            `reaction-${msgId}`,
+          );
+        }
+      });
 
       socket.on("msg-delivered", ({ msgId }) => {
         const state = messageStates.get(msgId);
@@ -900,6 +1508,8 @@
         state.status = "read";
         updateTick(state.el, "read");
       });
+
+      notificationsBtnEl.addEventListener("click", requestNotifications);
 
       sendBtnEl.onclick = async () => {
         const text = msgInputEl.value.trim();
@@ -926,9 +1536,14 @@
             msgId,
           });
 
+          stopOutgoingTyping(selectedPeer.id);
+
           const messageEl = appendMessage("you", text, {
             type: "sent",
             verified: true,
+            msgId,
+            peerId: selectedPeer.id,
+            messageKey: getSentMessageKey(msgId),
           });
 
           messageStates.set(msgId, {
@@ -938,6 +1553,7 @@
           });
 
           msgInputEl.value = "";
+          msgInputEl.focus();
         } catch (error) {
           appendMessage("system", `[send failed: ${error.message}]`, {
             type: "error",
@@ -950,6 +1566,9 @@
           sendBtnEl.click();
         }
       });
+
+      msgInputEl.addEventListener("input", handleComposerInput);
+      window.addEventListener("beforeunload", () => stopOutgoingTyping());
 
       init();
     </script>

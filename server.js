@@ -54,6 +54,35 @@ io.on("connection", (socket) => {
     },
   );
 
+  socket.on("typing-start", ({ to }) => {
+    if (!to) {
+      return;
+    }
+
+    io.to(to).emit("typing-start", { from: socket.id });
+  });
+
+  socket.on("typing-stop", ({ to }) => {
+    if (!to) {
+      return;
+    }
+
+    io.to(to).emit("typing-stop", { from: socket.id });
+  });
+
+  socket.on("message-reaction", ({ to, msgId, emoji, action }) => {
+    if (!to || !msgId || !emoji || !action) {
+      return;
+    }
+
+    io.to(to).emit("message-reaction", {
+      from: socket.id,
+      msgId,
+      emoji,
+      action,
+    });
+  });
+
   // Relay delivered ack back to original sender
   socket.on("msg-delivered", ({ to, msgId }) => {
     io.to(to).emit("msg-delivered", { msgId });
