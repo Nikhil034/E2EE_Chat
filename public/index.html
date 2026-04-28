@@ -202,6 +202,82 @@
         color: var(--accent);
       }
 
+      .group-toolbar {
+        margin-bottom: 12px;
+      }
+
+      #group-name-input {
+        flex: 1;
+        min-width: 180px;
+        background: #111827;
+        border: 1px solid #334155;
+        color: var(--text);
+        padding: 9px 11px;
+        border-radius: 8px;
+        font-family: inherit;
+      }
+
+      #group-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .group-btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        background: #111827;
+        color: var(--text);
+        cursor: pointer;
+        text-align: left;
+        font-family: inherit;
+      }
+
+      .group-btn.active {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px rgba(74, 222, 128, 0.15);
+      }
+
+      .group-btn.joinable {
+        color: var(--info);
+      }
+
+      .group-name {
+        font-size: 13px;
+      }
+
+      .group-meta {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .group-action {
+        flex-shrink: 0;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #082f49;
+        color: var(--info);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      #leave-group-btn {
+        background: transparent;
+        color: var(--info);
+        border: 1px solid #334155;
+        padding: 7px 12px;
+        border-radius: 999px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+
       .peer-name {
         font-size: 13px;
       }
@@ -251,6 +327,13 @@
         gap: 6px;
         max-width: 100%;
         flex-wrap: wrap;
+      }
+
+      .conversation-label {
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
       }
 
       .msg .who {
@@ -377,6 +460,69 @@
         background: #082f49;
       }
 
+      .attachment-card {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 220px;
+        max-width: min(100%, 360px);
+        padding: 10px;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        background: #111827;
+      }
+
+      .attachment-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .attachment-title {
+        font-size: 12px;
+        color: var(--text);
+        word-break: break-word;
+      }
+
+      .attachment-badge {
+        flex-shrink: 0;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #082f49;
+        color: var(--info);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .attachment-meta {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .attachment-preview {
+        width: 100%;
+        max-height: 220px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #1f2937;
+      }
+
+      .attachment-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: fit-content;
+        padding: 7px 12px;
+        border-radius: 999px;
+        border: 1px solid #334155;
+        background: transparent;
+        color: var(--info);
+        font-size: 12px;
+        text-decoration: none;
+      }
+
       #typing-indicator {
         min-height: 20px;
         margin-bottom: 10px;
@@ -387,6 +533,21 @@
       #input-row {
         display: flex;
         gap: 8px;
+      }
+
+      .input-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      #attach-btn {
+        background: transparent;
+        color: var(--info);
+        border: 1px solid #334155;
+        padding: 10px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: inherit;
       }
 
       #msg-input {
@@ -428,6 +589,14 @@
         }
 
         #send-btn {
+          width: 100%;
+        }
+
+        .input-actions {
+          width: 100%;
+        }
+
+        #attach-btn {
           width: 100%;
         }
 
@@ -477,10 +646,41 @@
       <div id="peer-list">none (open another tab)</div>
     </div>
 
+    <div id="groups" class="card">
+      <div class="section-header">
+        <strong>Groups</strong>
+        <span class="card-label">Add room state before sender-key rollout</span>
+      </div>
+      <div class="toolbar group-toolbar">
+        <input id="group-name-input" placeholder="New group name..." />
+        <button id="create-group-btn" type="button">Create Group</button>
+      </div>
+      <div id="group-list">none yet</div>
+    </div>
+
+    <div id="selected-group-box" class="card" hidden>
+      <div class="peer-card-header">
+        <div>
+          <div class="card-label">SELECTED GROUP</div>
+          <div id="selected-group-name" class="fingerprint-value">-</div>
+        </div>
+        <button id="leave-group-btn" type="button">Leave Group</button>
+      </div>
+      <div id="selected-group-meta" class="card-label"></div>
+      <div class="card-label">
+        Foundation only: next step is sender-key distribution and encrypted
+        group message fan-out.
+      </div>
+    </div>
+
     <div id="chat"></div>
     <div id="typing-indicator"></div>
 
     <div id="input-row">
+      <div class="input-actions">
+        <button id="attach-btn" type="button" disabled>Share File</button>
+        <input id="attachment-input" type="file" hidden />
+      </div>
       <input id="msg-input" placeholder="Type a message..." disabled />
       <button id="send-btn" disabled>Send</button>
     </div>
@@ -503,25 +703,39 @@
       const peerFingerprintEl = document.getElementById("peer-fingerprint");
       const peerFingerprintHexEl = document.getElementById("peer-fingerprint-hex");
       const peerListEl = document.getElementById("peer-list");
+      const groupNameInputEl = document.getElementById("group-name-input");
+      const createGroupBtnEl = document.getElementById("create-group-btn");
+      const groupListEl = document.getElementById("group-list");
+      const selectedGroupBoxEl = document.getElementById("selected-group-box");
+      const selectedGroupNameEl = document.getElementById("selected-group-name");
+      const selectedGroupMetaEl = document.getElementById("selected-group-meta");
+      const leaveGroupBtnEl = document.getElementById("leave-group-btn");
       const chatEl = document.getElementById("chat");
       const typingIndicatorEl = document.getElementById("typing-indicator");
+      const attachBtnEl = document.getElementById("attach-btn");
+      const attachmentInputEl = document.getElementById("attachment-input");
       const msgInputEl = document.getElementById("msg-input");
       const sendBtnEl = document.getElementById("send-btn");
+
+      const ATTACHMENT_SIZE_LIMIT = 4 * 1024 * 1024;
 
       let myKeyPair = null;
       let myPublicKeyJwk = null;
       let mySigningKeyPair = null;
       let mySigningPublicKeyJwk = null;
       let selectedPeer = null;
+      let selectedGroupId = null;
       let visiblePeerIds = [];
       let outgoingTypingPeerId = null;
       let outgoingTypingTimer = null;
 
+      const groups = new Map();
       const peerKeys = {};
       const peerSigningKeys = {};
       const typingPeers = new Set();
       const messageStates = new Map();
       const messageRegistry = new Map();
+      const groupSenderKeyState = new Map();
 
       async function generateKeyPair() {
         return crypto.subtle.generateKey(
@@ -602,6 +816,40 @@
         return new TextDecoder().decode(decrypted);
       }
 
+      function bytesToBase64(bytes) {
+        return btoa(String.fromCharCode(...bytes));
+      }
+
+      function base64ToBytes(value) {
+        return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
+      }
+
+      async function encryptBytes(aesKey, bytes) {
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const ciphertext = await crypto.subtle.encrypt(
+          { name: "AES-GCM", iv },
+          aesKey,
+          bytes,
+        );
+
+        return {
+          iv: bytesToBase64(iv),
+          ciphertext: bytesToBase64(new Uint8Array(ciphertext)),
+        };
+      }
+
+      async function decryptBytes(aesKey, ciphertextB64, ivB64) {
+        const iv = base64ToBytes(ivB64);
+        const ciphertext = base64ToBytes(ciphertextB64);
+        const decrypted = await crypto.subtle.decrypt(
+          { name: "AES-GCM", iv },
+          aesKey,
+          ciphertext,
+        );
+
+        return new Uint8Array(decrypted);
+      }
+
       async function signMessage(privateSignKey, plaintext) {
         const encoded = new TextEncoder().encode(plaintext);
         const signatureBuffer = await crypto.subtle.sign(
@@ -626,6 +874,62 @@
           publicSignKey,
           signatureBytes,
           encoded,
+        );
+      }
+
+      async function readFileBytes(file) {
+        return new Uint8Array(await file.arrayBuffer());
+      }
+
+      function formatFileSize(bytes) {
+        if (bytes < 1024) {
+          return `${bytes} B`;
+        }
+
+        if (bytes < 1024 * 1024) {
+          return `${(bytes / 1024).toFixed(1)} KB`;
+        }
+
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+      }
+
+      function getAttachmentKind(mimeType) {
+        return mimeType && mimeType.startsWith("image/") ? "image" : "file";
+      }
+
+      function createAttachmentMeta({ name, mimeType, size }) {
+        return {
+          name,
+          mimeType: mimeType || "application/octet-stream",
+          size,
+          kind: getAttachmentKind(mimeType),
+        };
+      }
+
+      function buildTextSignaturePayload(plaintext) {
+        return JSON.stringify({
+          msgType: "text",
+          text: plaintext,
+        });
+      }
+
+      function buildAttachmentSignaturePayload(attachmentMeta, ciphertext, iv) {
+        return JSON.stringify({
+          msgType: "attachment",
+          name: attachmentMeta.name,
+          mimeType: attachmentMeta.mimeType,
+          size: attachmentMeta.size,
+          kind: attachmentMeta.kind,
+          ciphertext,
+          iv,
+        });
+      }
+
+      function createAttachmentUrl(bytes, mimeType) {
+        return URL.createObjectURL(
+          new Blob([bytes], {
+            type: mimeType || "application/octet-stream",
+          }),
         );
       }
 
@@ -897,6 +1201,104 @@
         return "received:" + peerId + ":" + msgId;
       }
 
+      function setComposerEnabled(enabled) {
+        msgInputEl.disabled = !enabled;
+        sendBtnEl.disabled = !enabled;
+        attachBtnEl.disabled = !enabled;
+      }
+
+      function ensureGroupSenderKeyState(groupId) {
+        if (!groupSenderKeyState.has(groupId)) {
+          groupSenderKeyState.set(groupId, {
+            mySenderKey: null,
+            mySenderKeyId: null,
+            remoteSenderKeys: {},
+            pendingMessages: [],
+            pendingDistributions: new Set(),
+            memberSnapshot: "",
+          });
+        }
+
+        return groupSenderKeyState.get(groupId);
+      }
+
+      async function generateSenderKey() {
+        return crypto.subtle.generateKey(
+          { name: "AES-GCM", length: 256 },
+          true,
+          ["encrypt", "decrypt"],
+        );
+      }
+
+      async function exportSenderKeyRaw(key) {
+        return new Uint8Array(await crypto.subtle.exportKey("raw", key));
+      }
+
+      async function importSenderKeyRaw(bytes) {
+        return crypto.subtle.importKey(
+          "raw",
+          bytes,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt", "decrypt"],
+        );
+      }
+
+      function getGroupMemberSnapshot(group) {
+        return [...group.members].sort().join(":");
+      }
+
+      function buildSenderKeyDistributionPayload({
+        groupId,
+        keyId,
+        recipientId,
+        ciphertext,
+        iv,
+      }) {
+        return JSON.stringify({
+          kind: "group-sender-key",
+          groupId,
+          keyId,
+          recipientId,
+          ciphertext,
+          iv,
+        });
+      }
+
+      function buildGroupMessageSignaturePayload({
+        groupId,
+        keyId,
+        msgId,
+        msgType,
+        ciphertext,
+        iv,
+        attachmentMeta = null,
+      }) {
+        return JSON.stringify({
+          kind: "group-message",
+          groupId,
+          keyId,
+          msgId,
+          msgType,
+          ciphertext,
+          iv,
+          attachmentMeta,
+        });
+      }
+
+      function getGroupMessageKey(groupId, senderId, msgId) {
+        return `group:${groupId}:${senderId}:${msgId}`;
+      }
+
+      function resetGroupSenderKeyState(state, memberSnapshot) {
+        state.mySenderKey = null;
+        state.mySenderKeyId = null;
+        state.remoteSenderKeys = {};
+        state.pendingMessages = [];
+        state.pendingDistributions = new Set();
+        state.memberSnapshot = memberSnapshot;
+      }
+
       function notificationsSupported() {
         return "Notification" in window;
       }
@@ -1029,6 +1431,361 @@
         updateSelectedPeerStatus();
       }
 
+      function updateSelectedGroupPanel() {
+        const group = selectedGroupId ? groups.get(selectedGroupId) : null;
+        const isMember = group?.members.includes(socket.id);
+
+        if (!group || !isMember) {
+          selectedGroupBoxEl.hidden = true;
+          selectedGroupNameEl.textContent = "-";
+          selectedGroupMetaEl.textContent = "";
+          return;
+        }
+
+        const senderKeyState = ensureGroupSenderKeyState(group.id);
+        const memberPreview =
+          group.members.length > 0
+            ? group.members.map(truncatePeerId).join(", ")
+            : "none";
+        const senderKeyStatus = senderKeyState.mySenderKey
+          ? "sender key staged"
+          : "sender key not distributed yet";
+
+        selectedGroupBoxEl.hidden = false;
+        selectedGroupNameEl.textContent = group.name;
+        selectedGroupMetaEl.textContent =
+          `${group.memberCount} members · ${senderKeyStatus} · ${memberPreview}`;
+      }
+
+      async function selectGroup(groupId) {
+        const group = groups.get(groupId);
+        if (!group) {
+          return;
+        }
+
+        if (!group.members.includes(socket.id)) {
+          socket.emit("join-group", { groupId });
+        }
+
+        clearSelectedPeer({ preserveComposer: true });
+        selectedGroupId = groupId;
+        setComposerEnabled(true);
+        ensureGroupSenderKeyState(groupId);
+        renderGroupList();
+        updateSelectedGroupPanel();
+
+        try {
+          await ensureLocalSenderKeyForGroup(groupId);
+        } catch (error) {
+          appendMessage("system", `[group key setup failed: ${error.message}]`, {
+            type: "error",
+          });
+        }
+
+        msgInputEl.focus();
+      }
+
+      function createGroupButton(group) {
+        const button = document.createElement("button");
+        const isMember = group.members.includes(socket.id);
+        const isSelected = selectedGroupId === group.id && isMember;
+
+        button.type = "button";
+        button.className =
+          "group-btn" +
+          (isSelected ? " active" : "") +
+          (isMember ? "" : " joinable");
+
+        const infoEl = document.createElement("div");
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "group-name";
+        nameEl.textContent = group.name;
+
+        const metaEl = document.createElement("div");
+        metaEl.className = "group-meta";
+        metaEl.textContent =
+          `${group.memberCount} members · ` +
+          (isMember ? "joined" : "tap to join");
+
+        const actionEl = document.createElement("span");
+        actionEl.className = "group-action";
+        actionEl.textContent = isSelected ? "selected" : isMember ? "open" : "join";
+
+        infoEl.appendChild(nameEl);
+        infoEl.appendChild(metaEl);
+        button.appendChild(infoEl);
+        button.appendChild(actionEl);
+
+        button.onclick = () => {
+          void selectGroup(group.id);
+        };
+
+        return button;
+      }
+
+      function renderGroupList() {
+        groupListEl.textContent = "";
+
+        if (groups.size === 0) {
+          groupListEl.textContent = "none yet";
+          updateSelectedGroupPanel();
+          return;
+        }
+
+        const sortedGroups = Array.from(groups.values()).sort((left, right) =>
+          left.name.localeCompare(right.name),
+        );
+
+        for (const group of sortedGroups) {
+          groupListEl.appendChild(createGroupButton(group));
+        }
+
+        updateSelectedGroupPanel();
+      }
+
+      async function distributeLocalSenderKey(groupId) {
+        const group = groups.get(groupId);
+        if (!group || !group.members.includes(socket.id)) {
+          return;
+        }
+
+        const state = ensureGroupSenderKeyState(groupId);
+        if (!state.mySenderKey || !state.mySenderKeyId) {
+          return;
+        }
+
+        const senderKeyBytes = await exportSenderKeyRaw(state.mySenderKey);
+        const distributions = [];
+
+        for (const memberId of group.members) {
+          if (memberId === socket.id || state.pendingDistributions.has(memberId)) {
+            continue;
+          }
+
+          const memberPublicKey = peerKeys[memberId];
+          if (!memberPublicKey) {
+            continue;
+          }
+
+          const sharedKey = await deriveSharedKey(
+            myKeyPair.privateKey,
+            memberPublicKey,
+          );
+          const { ciphertext, iv } = await encryptBytes(sharedKey, senderKeyBytes);
+          const signaturePayload = buildSenderKeyDistributionPayload({
+            groupId,
+            keyId: state.mySenderKeyId,
+            recipientId: memberId,
+            ciphertext,
+            iv,
+          });
+          const signature = await signMessage(
+            mySigningKeyPair.privateKey,
+            signaturePayload,
+          );
+
+          distributions.push({
+            to: memberId,
+            ciphertext,
+            iv,
+            signature,
+          });
+        }
+
+        if (distributions.length === 0) {
+          updateSelectedGroupPanel();
+          return;
+        }
+
+        socket.emit("distribute-group-sender-key", {
+          groupId,
+          keyId: state.mySenderKeyId,
+          senderPublicKey: myPublicKeyJwk,
+          senderSigningKey: mySigningPublicKeyJwk,
+          distributions,
+        });
+
+        for (const distribution of distributions) {
+          state.pendingDistributions.add(distribution.to);
+        }
+
+        updateSelectedGroupPanel();
+      }
+
+      async function ensureLocalSenderKeyForGroup(
+        groupId,
+        { forceRotate = false } = {},
+      ) {
+        const group = groups.get(groupId);
+        if (!group || !group.members.includes(socket.id)) {
+          return null;
+        }
+
+        const state = ensureGroupSenderKeyState(groupId);
+        const memberSnapshot = getGroupMemberSnapshot(group);
+        const membershipChanged =
+          state.memberSnapshot && state.memberSnapshot !== memberSnapshot;
+
+        if (forceRotate || membershipChanged) {
+          resetGroupSenderKeyState(state, memberSnapshot);
+        } else {
+          state.memberSnapshot = memberSnapshot;
+        }
+
+        if (!state.mySenderKey) {
+          state.mySenderKey = await generateSenderKey();
+          state.mySenderKeyId = generateMsgId();
+          state.pendingDistributions = new Set();
+        }
+
+        await distributeLocalSenderKey(groupId);
+        updateSelectedGroupPanel();
+        return state;
+      }
+
+      async function processIncomingGroupMessage(
+        payload,
+        { allowQueue = true } = {},
+      ) {
+        const {
+          groupId,
+          from,
+          keyId,
+          msgType = "text",
+          ciphertext,
+          iv,
+          signature,
+          msgId,
+          attachmentMeta,
+          senderSigningKey,
+        } = payload;
+
+        const group = groups.get(groupId);
+        if (!group || !group.members.includes(socket.id)) {
+          return false;
+        }
+
+        const state = ensureGroupSenderKeyState(groupId);
+        const senderKeyEntry = state.remoteSenderKeys[from];
+        if (!senderKeyEntry || senderKeyEntry.keyId !== keyId) {
+          if (allowQueue) {
+            state.pendingMessages.push(payload);
+          }
+          return false;
+        }
+
+        const signingKey =
+          senderSigningKey && signature
+            ? peerSigningKeys[from] || (await importSigningPublicKey(senderSigningKey))
+            : peerSigningKeys[from] || null;
+        if (signingKey) {
+          peerSigningKeys[from] = signingKey;
+        }
+
+        const verified =
+          signingKey && signature
+            ? await verifySignature(
+                signingKey,
+                buildGroupMessageSignaturePayload({
+                  groupId,
+                  keyId,
+                  msgId,
+                  msgType,
+                  ciphertext,
+                  iv,
+                  attachmentMeta,
+                }),
+                signature,
+              )
+            : false;
+
+        if (!verified) {
+          appendMessage(
+            "system",
+            `[group message rejected from ${truncatePeerId(from)}: signature verification failed]`,
+            { type: "error" },
+          );
+          return true;
+        }
+
+        const contextLabel = `group · ${group.name}`;
+        const messageKey = getGroupMessageKey(groupId, from, msgId);
+        const senderLabel = `${truncatePeerId(from)} @ ${group.name}`;
+
+        if (msgType === "attachment") {
+          const attachmentBytes = await decryptBytes(
+            senderKeyEntry.key,
+            ciphertext,
+            iv,
+          );
+          const attachment = {
+            ...attachmentMeta,
+            downloadUrl: createAttachmentUrl(
+              attachmentBytes,
+              attachmentMeta?.mimeType,
+            ),
+          };
+
+          appendMessage(senderLabel, "", {
+            type: "received",
+            verified,
+            msgId,
+            messageKey,
+            attachment,
+            contextLabel,
+          });
+
+          maybeShowNotification(
+            `${truncatePeerId(from)} shared ${attachment.kind} in ${group.name}`,
+            attachment.name,
+            `group-attachment-${groupId}-${msgId}`,
+          );
+        } else {
+          const plaintext = await decrypt(senderKeyEntry.key, ciphertext, iv);
+
+          appendMessage(senderLabel, plaintext, {
+            type: "received",
+            verified,
+            msgId,
+            messageKey,
+            contextLabel,
+          });
+
+          maybeShowNotification(
+            `New group message in ${group.name}`,
+            `${truncatePeerId(from)}: ${plaintext}`,
+            `group-message-${groupId}-${msgId}`,
+          );
+        }
+
+        return true;
+      }
+
+      async function drainPendingGroupMessages(groupId, senderId) {
+        const state = ensureGroupSenderKeyState(groupId);
+        const remaining = [];
+
+        for (const pendingMessage of state.pendingMessages) {
+          if (
+            pendingMessage.groupId === groupId &&
+            pendingMessage.from === senderId
+          ) {
+            const processed = await processIncomingGroupMessage(pendingMessage, {
+              allowQueue: false,
+            });
+
+            if (!processed) {
+              remaining.push(pendingMessage);
+            }
+          } else {
+            remaining.push(pendingMessage);
+          }
+        }
+
+        state.pendingMessages = remaining;
+      }
+
       function registerPublicKeys() {
         if (!myPublicKeyJwk || !mySigningPublicKeyJwk) {
           return;
@@ -1040,14 +1797,16 @@
         });
       }
 
-      function clearSelectedPeer() {
+      function clearSelectedPeer({ preserveComposer = false } = {}) {
         if (outgoingTypingPeerId) {
           stopOutgoingTyping(outgoingTypingPeerId);
         }
 
         selectedPeer = null;
-        msgInputEl.disabled = true;
-        sendBtnEl.disabled = true;
+        if (!preserveComposer) {
+          setComposerEnabled(false);
+        }
+        attachmentInputEl.value = "";
         peerFingerprintBoxEl.hidden = true;
         peerFingerprintEl.textContent = "-";
         peerFingerprintHexEl.textContent = "";
@@ -1059,6 +1818,11 @@
         const peerKey = peerKeys[id];
         if (!peerKey) {
           return;
+        }
+
+        if (selectedGroupId) {
+          selectedGroupId = null;
+          renderGroupList();
         }
 
         if (outgoingTypingPeerId && outgoingTypingPeerId !== id) {
@@ -1075,8 +1839,7 @@
         peerFingerprintEl.textContent = words;
         peerFingerprintHexEl.textContent = hex;
         peerFingerprintBoxEl.hidden = false;
-        msgInputEl.disabled = false;
-        sendBtnEl.disabled = false;
+        setComposerEnabled(true);
         renderPeerList();
       }
 
@@ -1088,6 +1851,57 @@
           ? "Signature verified"
           : "Signature could not be verified";
         return badge;
+      }
+
+      function createAttachmentCard(attachment) {
+        const {
+          name,
+          mimeType,
+          size,
+          kind,
+          downloadUrl,
+        } = attachment;
+
+        const cardEl = document.createElement("div");
+        cardEl.className = "attachment-card";
+
+        const headerEl = document.createElement("div");
+        headerEl.className = "attachment-header";
+
+        const titleEl = document.createElement("div");
+        titleEl.className = "attachment-title";
+        titleEl.textContent = name;
+
+        const badgeEl = document.createElement("span");
+        badgeEl.className = "attachment-badge";
+        badgeEl.textContent = kind;
+
+        headerEl.appendChild(titleEl);
+        headerEl.appendChild(badgeEl);
+        cardEl.appendChild(headerEl);
+
+        if (kind === "image") {
+          const previewEl = document.createElement("img");
+          previewEl.className = "attachment-preview";
+          previewEl.src = downloadUrl;
+          previewEl.alt = name;
+          cardEl.appendChild(previewEl);
+        }
+
+        const metaEl = document.createElement("div");
+        metaEl.className = "attachment-meta";
+        metaEl.textContent = `${mimeType} · ${formatFileSize(size)}`;
+        cardEl.appendChild(metaEl);
+
+        const linkEl = document.createElement("a");
+        linkEl.className = "attachment-link";
+        linkEl.href = downloadUrl;
+        linkEl.download = name;
+        linkEl.textContent =
+          kind === "image" ? "Download image" : "Download file";
+        cardEl.appendChild(linkEl);
+
+        return cardEl;
       }
 
       function createReactionChip(emoji, label, variant) {
@@ -1127,10 +1941,19 @@
           msgId = null,
           peerId = null,
           messageKey = null,
+          attachment = null,
+          contextLabel = "",
         } = options;
 
         const messageEl = document.createElement("div");
         messageEl.className = "msg msg-" + type;
+
+        if (contextLabel) {
+          const contextEl = document.createElement("div");
+          contextEl.className = "conversation-label";
+          contextEl.textContent = contextLabel;
+          messageEl.appendChild(contextEl);
+        }
 
         const rowEl = document.createElement("div");
         rowEl.className = "message-row";
@@ -1139,12 +1962,17 @@
         whoEl.className = "who";
         whoEl.textContent = who + ":";
 
-        const textEl = document.createElement("span");
-        textEl.className = "text";
-        textEl.textContent = text;
+        const contentEl = attachment
+          ? createAttachmentCard(attachment)
+          : document.createElement("span");
+
+        if (!attachment) {
+          contentEl.className = "text";
+          contentEl.textContent = text;
+        }
 
         rowEl.appendChild(whoEl);
-        rowEl.appendChild(textEl);
+        rowEl.appendChild(contentEl);
 
         if (type !== "error" && who !== "system") {
           rowEl.appendChild(createSignatureBadge(verified));
@@ -1302,6 +2130,363 @@
         scheduleTypingTimeout(selectedPeer.id);
       }
 
+      async function sendDirectAttachment(file) {
+        if (!selectedPeer || !file) {
+          return;
+        }
+
+        if (file.size === 0) {
+          appendMessage("system", "[empty files cannot be shared]", {
+            type: "error",
+          });
+          return;
+        }
+
+        if (file.size > ATTACHMENT_SIZE_LIMIT) {
+          appendMessage(
+            "system",
+            `[attachment too large: max ${formatFileSize(ATTACHMENT_SIZE_LIMIT)}]`,
+            { type: "error" },
+          );
+          return;
+        }
+
+        const targetPeer = selectedPeer;
+        attachBtnEl.disabled = true;
+
+        try {
+          const bytes = await readFileBytes(file);
+          const attachmentMeta = createAttachmentMeta({
+            name: file.name,
+            mimeType: file.type,
+            size: file.size,
+          });
+          const sharedKey = await deriveSharedKey(
+            myKeyPair.privateKey,
+            targetPeer.key,
+          );
+          const { ciphertext, iv } = await encryptBytes(sharedKey, bytes);
+          const signaturePayload = buildAttachmentSignaturePayload(
+            attachmentMeta,
+            ciphertext,
+            iv,
+          );
+          const signature = await signMessage(
+            mySigningKeyPair.privateKey,
+            signaturePayload,
+          );
+          const msgId = generateMsgId();
+
+          socket.emit("send-message", {
+            to: targetPeer.id,
+            msgType: "attachment",
+            ciphertext,
+            iv,
+            attachmentMeta,
+            senderPublicKey: myPublicKeyJwk,
+            senderSigningKey: mySigningPublicKeyJwk,
+            signature,
+            msgId,
+          });
+
+          stopOutgoingTyping(targetPeer.id);
+
+          const attachment = {
+            ...attachmentMeta,
+            downloadUrl: createAttachmentUrl(bytes, attachmentMeta.mimeType),
+          };
+
+          const messageEl = appendMessage("you", "", {
+            type: "sent",
+            verified: true,
+            msgId,
+            peerId: targetPeer.id,
+            messageKey: getSentMessageKey(msgId),
+            attachment,
+          });
+
+          messageStates.set(msgId, {
+            status: "sent",
+            el: messageEl,
+            to: targetPeer.id,
+          });
+        } catch (error) {
+          appendMessage("system", `[attachment send failed: ${error.message}]`, {
+            type: "error",
+          });
+        } finally {
+          attachmentInputEl.value = "";
+          if (selectedPeer) {
+            attachBtnEl.disabled = false;
+          }
+        }
+      }
+
+      async function sendGroupAttachment(file) {
+        if (!selectedGroupId || !file) {
+          return;
+        }
+
+        const group = groups.get(selectedGroupId);
+        if (!group || !group.members.includes(socket.id)) {
+          return;
+        }
+
+        if (file.size === 0) {
+          appendMessage("system", "[empty files cannot be shared]", {
+            type: "error",
+          });
+          return;
+        }
+
+        if (file.size > ATTACHMENT_SIZE_LIMIT) {
+          appendMessage(
+            "system",
+            `[attachment too large: max ${formatFileSize(ATTACHMENT_SIZE_LIMIT)}]`,
+            { type: "error" },
+          );
+          return;
+        }
+
+        attachBtnEl.disabled = true;
+
+        try {
+          const state = await ensureLocalSenderKeyForGroup(selectedGroupId);
+          if (!state?.mySenderKey || !state.mySenderKeyId) {
+            throw new Error("sender key unavailable");
+          }
+
+          const bytes = await readFileBytes(file);
+          const attachmentMeta = createAttachmentMeta({
+            name: file.name,
+            mimeType: file.type,
+            size: file.size,
+          });
+          const { ciphertext, iv } = await encryptBytes(state.mySenderKey, bytes);
+          const msgId = generateMsgId();
+          const signature = await signMessage(
+            mySigningKeyPair.privateKey,
+            buildGroupMessageSignaturePayload({
+              groupId: selectedGroupId,
+              keyId: state.mySenderKeyId,
+              msgId,
+              msgType: "attachment",
+              ciphertext,
+              iv,
+              attachmentMeta,
+            }),
+          );
+
+          socket.emit("send-group-message", {
+            groupId: selectedGroupId,
+            keyId: state.mySenderKeyId,
+            msgType: "attachment",
+            ciphertext,
+            iv,
+            attachmentMeta,
+            senderSigningKey: mySigningPublicKeyJwk,
+            signature,
+            msgId,
+          });
+
+          const attachment = {
+            ...attachmentMeta,
+            downloadUrl: createAttachmentUrl(bytes, attachmentMeta.mimeType),
+          };
+
+          appendMessage("you", "", {
+            type: "sent",
+            verified: true,
+            msgId,
+            messageKey: getGroupMessageKey(selectedGroupId, socket.id, msgId),
+            attachment,
+            contextLabel: `group · ${group.name}`,
+          });
+        } catch (error) {
+          appendMessage(
+            "system",
+            `[group attachment send failed: ${error.message}]`,
+            { type: "error" },
+          );
+        } finally {
+          attachmentInputEl.value = "";
+          if (selectedGroupId) {
+            attachBtnEl.disabled = false;
+          }
+        }
+      }
+
+      async function sendAttachment(file) {
+        if (selectedGroupId) {
+          await sendGroupAttachment(file);
+          return;
+        }
+
+        await sendDirectAttachment(file);
+      }
+
+      async function sendDirectText(text) {
+        if (!text || !selectedPeer) {
+          return;
+        }
+
+        const targetPeer = selectedPeer;
+        const sharedKey = await deriveSharedKey(
+          myKeyPair.privateKey,
+          targetPeer.key,
+        );
+        const { ciphertext, iv } = await encrypt(sharedKey, text);
+        const signature = await signMessage(
+          mySigningKeyPair.privateKey,
+          buildTextSignaturePayload(text),
+        );
+        const msgId = generateMsgId();
+
+        socket.emit("send-message", {
+          to: targetPeer.id,
+          msgType: "text",
+          ciphertext,
+          iv,
+          senderPublicKey: myPublicKeyJwk,
+          senderSigningKey: mySigningPublicKeyJwk,
+          signature,
+          msgId,
+        });
+
+        stopOutgoingTyping(targetPeer.id);
+
+        const messageEl = appendMessage("you", text, {
+          type: "sent",
+          verified: true,
+          msgId,
+          peerId: targetPeer.id,
+          messageKey: getSentMessageKey(msgId),
+        });
+
+        messageStates.set(msgId, {
+          status: "sent",
+          el: messageEl,
+          to: targetPeer.id,
+        });
+      }
+
+      async function sendGroupText(text) {
+        if (!text || !selectedGroupId) {
+          return;
+        }
+
+        const group = groups.get(selectedGroupId);
+        if (!group || !group.members.includes(socket.id)) {
+          return;
+        }
+
+        const state = await ensureLocalSenderKeyForGroup(selectedGroupId);
+        if (!state?.mySenderKey || !state.mySenderKeyId) {
+          throw new Error("sender key unavailable");
+        }
+
+        const { ciphertext, iv } = await encrypt(state.mySenderKey, text);
+        const msgId = generateMsgId();
+        const signature = await signMessage(
+          mySigningKeyPair.privateKey,
+          buildGroupMessageSignaturePayload({
+            groupId: selectedGroupId,
+            keyId: state.mySenderKeyId,
+            msgId,
+            msgType: "text",
+            ciphertext,
+            iv,
+          }),
+        );
+
+        socket.emit("send-group-message", {
+          groupId: selectedGroupId,
+          keyId: state.mySenderKeyId,
+          msgType: "text",
+          ciphertext,
+          iv,
+          senderSigningKey: mySigningPublicKeyJwk,
+          signature,
+          msgId,
+        });
+
+        appendMessage("you", text, {
+          type: "sent",
+          verified: true,
+          msgId,
+          messageKey: getGroupMessageKey(selectedGroupId, socket.id, msgId),
+          contextLabel: `group · ${group.name}`,
+        });
+      }
+
+      async function handleIncomingGroupSenderKey({
+        from,
+        groupId,
+        keyId,
+        ciphertext,
+        iv,
+        signature,
+        senderPublicKey,
+        senderSigningKey,
+      }) {
+        const group = groups.get(groupId);
+        if (!group || !group.members.includes(socket.id)) {
+          return;
+        }
+
+        const senderCryptoKey =
+          peerKeys[from] || (await importPublicKey(senderPublicKey));
+        peerKeys[from] = senderCryptoKey;
+
+        const signingKey =
+          senderSigningKey && signature
+            ? peerSigningKeys[from] || (await importSigningPublicKey(senderSigningKey))
+            : peerSigningKeys[from] || null;
+        if (signingKey) {
+          peerSigningKeys[from] = signingKey;
+        }
+
+        const verified =
+          signingKey && signature
+            ? await verifySignature(
+                signingKey,
+                buildSenderKeyDistributionPayload({
+                  groupId,
+                  keyId,
+                  recipientId: socket.id,
+                  ciphertext,
+                  iv,
+                }),
+                signature,
+              )
+            : false;
+
+        if (!verified) {
+          appendMessage(
+            "system",
+            `[group sender key rejected from ${truncatePeerId(from)}]`,
+            { type: "error" },
+          );
+          return;
+        }
+
+        const sharedKey = await deriveSharedKey(
+          myKeyPair.privateKey,
+          senderCryptoKey,
+        );
+        const senderKeyBytes = await decryptBytes(sharedKey, ciphertext, iv);
+        const senderKey = await importSenderKeyRaw(senderKeyBytes);
+        const state = ensureGroupSenderKeyState(groupId);
+
+        state.remoteSenderKeys[from] = {
+          keyId,
+          key: senderKey,
+        };
+
+        await drainPendingGroupMessages(groupId, from);
+        updateSelectedGroupPanel();
+      }
+
       async function init() {
         updateNotificationUI();
 
@@ -1337,12 +2522,16 @@
           ? "Connected. Select a peer."
           : "Connected. Preparing keys...";
         registerPublicKeys();
+        socket.emit("request-groups");
       });
 
       socket.on("disconnect", () => {
         statusEl.textContent = "Disconnected. Reconnecting...";
         visiblePeerIds = [];
+        selectedGroupId = null;
         typingPeers.clear();
+        groups.clear();
+        groupSenderKeyState.clear();
 
         for (const peerId of Object.keys(peerKeys)) {
           delete peerKeys[peerId];
@@ -1350,6 +2539,7 @@
         }
 
         clearSelectedPeer();
+        renderGroupList();
       });
 
       socket.on("peer-list", async (peers) => {
@@ -1400,6 +2590,76 @@
         }
 
         renderPeerList();
+
+        for (const group of groups.values()) {
+          if (group.members.includes(socket.id)) {
+            try {
+              await ensureLocalSenderKeyForGroup(group.id);
+            } catch (error) {
+              console.warn("Failed to refresh sender key after peer sync:", error);
+            }
+          }
+        }
+      });
+
+      socket.on("group-list", async (serverGroups) => {
+        groups.clear();
+
+        for (const group of serverGroups) {
+          groups.set(group.id, group);
+
+          if (group.members.includes(socket.id)) {
+            const state = ensureGroupSenderKeyState(group.id);
+            const memberSnapshot = getGroupMemberSnapshot(group);
+            if (state.memberSnapshot && state.memberSnapshot !== memberSnapshot) {
+              resetGroupSenderKeyState(state, memberSnapshot);
+            } else {
+              state.memberSnapshot = memberSnapshot;
+            }
+          }
+        }
+
+        for (const groupId of Array.from(groupSenderKeyState.keys())) {
+          const group = groups.get(groupId);
+          if (!group || !group.members.includes(socket.id)) {
+            groupSenderKeyState.delete(groupId);
+          }
+        }
+
+        if (selectedGroupId) {
+          const group = groups.get(selectedGroupId);
+          if (!group || !group.members.includes(socket.id)) {
+            selectedGroupId = null;
+          }
+        }
+
+        for (const group of groups.values()) {
+          if (group.members.includes(socket.id)) {
+            try {
+              await ensureLocalSenderKeyForGroup(group.id);
+            } catch (error) {
+              console.warn("Failed to distribute sender key for group:", error);
+            }
+          }
+        }
+
+        renderGroupList();
+      });
+
+      socket.on("group-selected", ({ groupId }) => {
+        if (!groupId) {
+          return;
+        }
+
+        void selectGroup(groupId);
+      });
+
+      socket.on("group-sender-key", (payload) => {
+        void handleIncomingGroupSenderKey(payload);
+      });
+
+      socket.on("receive-group-message", (payload) => {
+        void processIncomingGroupMessage(payload);
       });
 
       socket.on("typing-start", ({ from }) => {
@@ -1415,6 +2675,7 @@
       socket.on(
         "receive-message",
         async ({
+          msgType = "text",
           from,
           ciphertext,
           iv,
@@ -1422,6 +2683,7 @@
           senderSigningKey,
           signature,
           msgId,
+          attachmentMeta,
         }) => {
           socket.emit("msg-delivered", { to: from, msgId });
           typingPeers.delete(from);
@@ -1430,37 +2692,88 @@
             const senderCryptoKey =
               peerKeys[from] || (await importPublicKey(senderPublicKey));
             peerKeys[from] = senderCryptoKey;
+            const signingKey =
+              senderSigningKey && signature
+                ? peerSigningKeys[from] ||
+                  (await importSigningPublicKey(senderSigningKey))
+                : null;
+            if (signingKey) {
+              peerSigningKeys[from] = signingKey;
+            }
 
             const sharedKey = await deriveSharedKey(
               myKeyPair.privateKey,
               senderCryptoKey,
             );
-            const plaintext = await decrypt(sharedKey, ciphertext, iv);
-
-            let verified = false;
-            if (senderSigningKey && signature) {
-              const signingKey =
-                peerSigningKeys[from] ||
-                (await importSigningPublicKey(senderSigningKey));
-              peerSigningKeys[from] = signingKey;
-              verified = await verifySignature(signingKey, plaintext, signature);
-            }
 
             const messageKey = getReceivedMessageKey(from, msgId);
-            appendMessage(truncatePeerId(from), plaintext, {
-              type: "received",
-              verified,
-              msgId,
-              peerId: from,
-              messageKey,
-            });
+            if (msgType === "attachment") {
+              const verified =
+                signingKey && signature
+                  ? await verifySignature(
+                      signingKey,
+                      buildAttachmentSignaturePayload(
+                        attachmentMeta,
+                        ciphertext,
+                        iv,
+                      ),
+                      signature,
+                    )
+                  : false;
+              const attachmentBytes = await decryptBytes(
+                sharedKey,
+                ciphertext,
+                iv,
+              );
+              const attachment = {
+                ...attachmentMeta,
+                downloadUrl: createAttachmentUrl(
+                  attachmentBytes,
+                  attachmentMeta?.mimeType,
+                ),
+              };
+
+              appendMessage(truncatePeerId(from), "", {
+                type: "received",
+                verified,
+                msgId,
+                peerId: from,
+                messageKey,
+                attachment,
+              });
+
+              maybeShowNotification(
+                `${truncatePeerId(from)} shared ${attachment.kind}`,
+                attachment.name,
+                `attachment-${from}-${msgId}`,
+              );
+            } else {
+              const plaintext = await decrypt(sharedKey, ciphertext, iv);
+              const verified =
+                signingKey && signature
+                  ? await verifySignature(
+                      signingKey,
+                      buildTextSignaturePayload(plaintext),
+                      signature,
+                    )
+                  : false;
+
+              appendMessage(truncatePeerId(from), plaintext, {
+                type: "received",
+                verified,
+                msgId,
+                peerId: from,
+                messageKey,
+              });
+
+              maybeShowNotification(
+                `New message from ${truncatePeerId(from)}`,
+                plaintext,
+                `message-${from}`,
+              );
+            }
 
             socket.emit("msg-read", { to: from, msgId });
-            maybeShowNotification(
-              `New message from ${truncatePeerId(from)}`,
-              plaintext,
-              `message-${from}`,
-            );
           } catch (error) {
             appendMessage("system", `[decryption failed: ${error.message}]`, {
               type: "error",
@@ -1511,46 +2824,47 @@
 
       notificationsBtnEl.addEventListener("click", requestNotifications);
 
+      createGroupBtnEl.addEventListener("click", () => {
+        const name = groupNameInputEl.value.trim();
+        if (!name) {
+          return;
+        }
+
+        socket.emit("create-group", { name });
+        groupNameInputEl.value = "";
+      });
+
+      groupNameInputEl.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          createGroupBtnEl.click();
+        }
+      });
+
+      leaveGroupBtnEl.addEventListener("click", () => {
+        if (!selectedGroupId) {
+          return;
+        }
+
+        socket.emit("leave-group", { groupId: selectedGroupId });
+        selectedGroupId = null;
+        if (!selectedPeer) {
+          setComposerEnabled(false);
+        }
+        renderGroupList();
+      });
+
       sendBtnEl.onclick = async () => {
         const text = msgInputEl.value.trim();
-        if (!text || !selectedPeer) {
+        if (!text) {
           return;
         }
 
         try {
-          const sharedKey = await deriveSharedKey(
-            myKeyPair.privateKey,
-            selectedPeer.key,
-          );
-          const { ciphertext, iv } = await encrypt(sharedKey, text);
-          const signature = await signMessage(mySigningKeyPair.privateKey, text);
-          const msgId = generateMsgId();
-
-          socket.emit("send-message", {
-            to: selectedPeer.id,
-            ciphertext,
-            iv,
-            senderPublicKey: myPublicKeyJwk,
-            senderSigningKey: mySigningPublicKeyJwk,
-            signature,
-            msgId,
-          });
-
-          stopOutgoingTyping(selectedPeer.id);
-
-          const messageEl = appendMessage("you", text, {
-            type: "sent",
-            verified: true,
-            msgId,
-            peerId: selectedPeer.id,
-            messageKey: getSentMessageKey(msgId),
-          });
-
-          messageStates.set(msgId, {
-            status: "sent",
-            el: messageEl,
-            to: selectedPeer.id,
-          });
+          if (selectedGroupId) {
+            await sendGroupText(text);
+          } else {
+            await sendDirectText(text);
+          }
 
           msgInputEl.value = "";
           msgInputEl.focus();
@@ -1565,6 +2879,19 @@
         if (event.key === "Enter") {
           sendBtnEl.click();
         }
+      });
+
+      attachBtnEl.addEventListener("click", () => {
+        if (!selectedPeer && !selectedGroupId) {
+          return;
+        }
+
+        attachmentInputEl.click();
+      });
+
+      attachmentInputEl.addEventListener("change", async (event) => {
+        const [file] = event.target.files;
+        await sendAttachment(file);
       });
 
       msgInputEl.addEventListener("input", handleComposerInput);
