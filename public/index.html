@@ -1,2903 +1,404 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>E2EE Chat</title>
-    <style>
-      :root {
-        --bg: #0d0d0d;
-        --panel: #0f172a;
-        --panel-border: #1e293b;
-        --muted: #64748b;
-        --text: #e2e8f0;
-        --accent: #4ade80;
-        --accent-soft: #052e16;
-        --info: #7dd3fc;
-        --bubble-in: #1e293b;
-        --bubble-out: #1e3a2f;
-        --danger-bg: #450a0a;
-        --danger-text: #fecaca;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: monospace;
-        max-width: 760px;
-        margin: 40px auto;
-        padding: 0 20px 40px;
-        background: var(--bg);
-        color: var(--text);
-      }
-
-      h2 {
-        margin-bottom: 10px;
-        color: var(--accent);
-      }
-
-      #status {
-        color: #888;
-        font-size: 13px;
-        margin-bottom: 10px;
-      }
-
-      #my-id {
-        font-size: 12px;
-        color: var(--muted);
-        margin-bottom: 14px;
-      }
-
-      .topbar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 16px;
-      }
-
-      .pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        min-height: 34px;
-        padding: 7px 12px;
-        border: 1px solid var(--panel-border);
-        border-radius: 999px;
-        background: var(--panel);
-        color: var(--text);
-        font-size: 12px;
-      }
-
-      .toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .toolbar button {
-        background: transparent;
-        color: var(--info);
-        border: 1px solid #334155;
-        padding: 7px 12px;
-        border-radius: 999px;
-        cursor: pointer;
-        font-family: inherit;
-      }
-
-      .toolbar button:disabled {
-        opacity: 0.55;
-        cursor: default;
-      }
-
-      .toolbar span {
-        font-size: 12px;
-        color: var(--muted);
-      }
-
-      .card {
-        margin: 0 0 14px;
-        padding: 12px 14px;
-        background: var(--panel);
-        border: 1px solid var(--panel-border);
-        border-radius: 10px;
-      }
-
-      .card-label {
-        margin-bottom: 6px;
-        font-size: 11px;
-        color: var(--muted);
-      }
-
-      .fingerprint-value {
-        font-size: 15px;
-        letter-spacing: 0.05em;
-      }
-
-      #my-fingerprint {
-        color: var(--accent);
-      }
-
-      #peer-fingerprint {
-        color: var(--info);
-      }
-
-      .fingerprint-hex {
-        margin-top: 4px;
-        font-size: 10px;
-        color: #334155;
-      }
-
-      .peer-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 6px;
-      }
-
-      .presence-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 3px 9px;
-        border-radius: 999px;
-        border: 1px solid #334155;
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-      }
-
-      .presence-badge.online {
-        color: var(--accent);
-        background: var(--accent-soft);
-        border-color: #166534;
-      }
-
-      .presence-badge.typing {
-        color: var(--info);
-        background: #082f49;
-        border-color: #0f766e;
-      }
-
-      .presence-badge.offline {
-        color: var(--muted);
-      }
-
-      .section-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        margin-bottom: 10px;
-      }
-
-      #peer-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .peer-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
-        min-width: 132px;
-        padding: 10px 12px;
-        background: #111827;
-        color: var(--info);
-        border: 1px solid #334155;
-        border-radius: 10px;
-        cursor: pointer;
-        font-family: inherit;
-      }
-
-      .peer-btn.active {
-        border-color: var(--accent);
-        color: var(--accent);
-      }
-
-      .group-toolbar {
-        margin-bottom: 12px;
-      }
-
-      #group-name-input {
-        flex: 1;
-        min-width: 180px;
-        background: #111827;
-        border: 1px solid #334155;
-        color: var(--text);
-        padding: 9px 11px;
-        border-radius: 8px;
-        font-family: inherit;
-      }
-
-      #group-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .group-btn {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid #334155;
-        border-radius: 10px;
-        background: #111827;
-        color: var(--text);
-        cursor: pointer;
-        text-align: left;
-        font-family: inherit;
-      }
-
-      .group-btn.active {
-        border-color: var(--accent);
-        box-shadow: inset 0 0 0 1px rgba(74, 222, 128, 0.15);
-      }
-
-      .group-btn.joinable {
-        color: var(--info);
-      }
-
-      .group-name {
-        font-size: 13px;
-      }
-
-      .group-meta {
-        font-size: 11px;
-        color: var(--muted);
-      }
-
-      .group-action {
-        flex-shrink: 0;
-        padding: 2px 8px;
-        border-radius: 999px;
-        background: #082f49;
-        color: var(--info);
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-
-      #leave-group-btn {
-        background: transparent;
-        color: var(--info);
-        border: 1px solid #334155;
-        padding: 7px 12px;
-        border-radius: 999px;
-        cursor: pointer;
-        font-family: inherit;
-      }
-
-      .peer-name {
-        font-size: 13px;
-      }
-
-      .peer-meta {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 11px;
-        color: var(--muted);
-      }
-
-      .status-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 999px;
-        background: var(--accent);
-      }
-
-      .status-dot.typing {
-        background: var(--info);
-      }
-
-      #chat {
-        border: 1px solid #334155;
-        border-radius: 10px;
-        padding: 14px;
-        min-height: 240px;
-        max-height: 420px;
-        overflow-y: auto;
-        margin: 16px 0 10px;
-        background: #0b1220;
-      }
-
-      .msg {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 6px;
-        margin: 0 0 12px;
-        font-size: 13px;
-      }
-
-      .message-row {
-        display: flex;
-        align-items: baseline;
-        gap: 6px;
-        max-width: 100%;
-        flex-wrap: wrap;
-      }
-
-      .conversation-label {
-        font-size: 10px;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-
-      .msg .who {
-        color: #94a3b8;
-      }
-
-      .msg .text {
-        padding: 6px 10px;
-        border-radius: 12px;
-        word-break: break-word;
-      }
-
-      .msg-received .text {
-        background: var(--bubble-in);
-        color: var(--text);
-        border-radius: 12px 12px 12px 3px;
-      }
-
-      .msg-sent {
-        align-items: flex-end;
-      }
-
-      .msg-sent .message-row {
-        flex-direction: row-reverse;
-      }
-
-      .msg-sent .who {
-        display: none;
-      }
-
-      .msg-sent .text {
-        background: var(--bubble-out);
-        color: #a7f3d0;
-        border-radius: 12px 12px 3px 12px;
-      }
-
-      .msg-error .text {
-        background: var(--danger-bg);
-        color: var(--danger-text);
-        border-radius: 10px;
-      }
-
-      .tick {
-        min-width: 18px;
-        font-size: 11px;
-        transition: color 0.3s;
-      }
-
-      .tick-sent {
-        color: #334155;
-      }
-
-      .tick-delivered {
-        color: #64748b;
-      }
-
-      .tick-read {
-        color: #38bdf8;
-      }
-
-      .sig-badge {
-        padding: 2px 7px;
-        border-radius: 999px;
-        font-size: 10px;
-        white-space: nowrap;
-      }
-
-      .sig-ok {
-        background: var(--accent-soft);
-        color: var(--accent);
-        border: 1px solid #166534;
-      }
-
-      .sig-fail {
-        background: var(--danger-bg);
-        color: #f87171;
-        border: 1px solid #7f1d1d;
-      }
-
-      .reaction-strip {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        min-height: 20px;
-      }
-
-      .reaction-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 3px 8px;
-        border-radius: 999px;
-        border: 1px solid #334155;
-        background: #111827;
-        font-size: 11px;
-        color: var(--text);
-      }
-
-      .reaction-chip.mine {
-        color: var(--info);
-      }
-
-      .reaction-chip.remote {
-        color: var(--accent);
-      }
-
-      .reaction-picker {
-        display: flex;
-        gap: 6px;
-      }
-
-      .reaction-btn {
-        border: 1px solid #334155;
-        background: transparent;
-        color: var(--text);
-        border-radius: 999px;
-        padding: 2px 8px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-
-      .reaction-btn.active {
-        border-color: var(--info);
-        background: #082f49;
-      }
-
-      .attachment-card {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        min-width: 220px;
-        max-width: min(100%, 360px);
-        padding: 10px;
-        border: 1px solid #334155;
-        border-radius: 12px;
-        background: #111827;
-      }
-
-      .attachment-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-      }
-
-      .attachment-title {
-        font-size: 12px;
-        color: var(--text);
-        word-break: break-word;
-      }
-
-      .attachment-badge {
-        flex-shrink: 0;
-        padding: 2px 8px;
-        border-radius: 999px;
-        background: #082f49;
-        color: var(--info);
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-
-      .attachment-meta {
-        font-size: 11px;
-        color: var(--muted);
-      }
-
-      .attachment-preview {
-        width: 100%;
-        max-height: 220px;
-        object-fit: cover;
-        border-radius: 8px;
-        border: 1px solid #1f2937;
-      }
-
-      .attachment-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: fit-content;
-        padding: 7px 12px;
-        border-radius: 999px;
-        border: 1px solid #334155;
-        background: transparent;
-        color: var(--info);
-        font-size: 12px;
-        text-decoration: none;
-      }
-
-      #typing-indicator {
-        min-height: 20px;
-        margin-bottom: 10px;
-        font-size: 12px;
-        color: var(--info);
-      }
-
-      #input-row {
-        display: flex;
-        gap: 8px;
-      }
-
-      .input-actions {
-        display: flex;
-        gap: 8px;
-      }
-
-      #attach-btn {
-        background: transparent;
-        color: var(--info);
-        border: 1px solid #334155;
-        padding: 10px 14px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-family: inherit;
-      }
-
-      #msg-input {
-        flex: 1;
-        background: #111827;
-        border: 1px solid #334155;
-        color: var(--text);
-        padding: 10px 12px;
-        border-radius: 8px;
-        font-family: inherit;
-      }
-
-      #send-btn {
-        background: #166534;
-        color: var(--accent);
-        border: none;
-        padding: 10px 16px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-family: inherit;
-      }
-
-      @media (max-width: 640px) {
-        body {
-          margin: 20px auto;
-          padding: 0 14px 28px;
-        }
-
-        .topbar,
-        .section-header,
-        .peer-card-header,
-        #input-row {
-          flex-direction: column;
-          align-items: stretch;
-        }
-
-        .toolbar {
-          justify-content: flex-start;
-        }
-
-        #send-btn {
-          width: 100%;
-        }
-
-        .input-actions {
-          width: 100%;
-        }
-
-        #attach-btn {
-          width: 100%;
-        }
-
-        .peer-btn {
-          min-width: 100%;
-        }
-      }
-    </style>
+    <meta name="theme-color" content="#008069" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="E2EE Chat" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <meta http-equiv="Permissions-Policy" content="display-capture=()" />
+    <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <h2>E2EE Chat</h2>
-    <div id="status">Generating keys...</div>
-    <div id="my-id"></div>
-
-    <div class="topbar">
-      <div id="presence-summary" class="pill">0 peers online</div>
-      <div class="toolbar">
-        <button id="notifications-btn" type="button">Enable Notifications</button>
-        <span id="notifications-status">Notifications are off.</span>
-      </div>
+    <div id="capture-shield" class="capture-shield" hidden aria-hidden="true"></div>
+    <div id="reconnect-banner" class="reconnect-banner" hidden>
+      Reconnecting to the relay…
     </div>
 
-    <div class="card">
-      <div class="card-label">
-        YOUR KEY FINGERPRINT - read this aloud to verify your identity
-      </div>
-      <div id="my-fingerprint" class="fingerprint-value">computing...</div>
-      <div id="my-fingerprint-hex" class="fingerprint-hex"></div>
-    </div>
+    <div id="app" class="app">
+      <aside id="sidebar" class="sidebar">
+        <header class="sidebar-header">
+          <div class="brand">
+            <div class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22">
+                <path
+                  fill="currentColor"
+                  d="M12 2a5 5 0 0 0-5 5v2H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 7V7a3 3 0 1 1 6 0v2H9z"
+                />
+              </svg>
+            </div>
+            <div>
+              <div class="brand-title">E2EE Chat</div>
+              <div id="status" class="brand-status">Generating keys…</div>
+            </div>
+          </div>
+          <div class="sidebar-actions">
+            <button
+              id="theme-btn"
+              class="icon-btn"
+              type="button"
+              aria-label="Switch theme"
+              title="Switch theme"
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M12 4.5a1 1 0 0 1 1 1V7a1 1 0 1 1-2 0V5.5a1 1 0 0 1 1-1zm0 11a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7zM5.5 11a1 1 0 0 1-1 1H3a1 1 0 1 1 0-2h1.5a1 1 0 0 1 1 1zm16 1a1 1 0 1 0 0-2H20a1 1 0 1 0 0 2h1.5zM12 18a1 1 0 0 1 1 1v1.5a1 1 0 1 1-2 0V19a1 1 0 0 1 1-1z"
+                />
+              </svg>
+            </button>
+            <button
+              id="notifications-btn"
+              class="icon-btn"
+              type="button"
+              aria-label="Enable notifications"
+              title="Notifications"
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M12 22a2.2 2.2 0 0 0 2.2-2.2h-4.4A2.2 2.2 0 0 0 12 22zm6.5-6.2V11a6.5 6.5 0 1 0-13 0v4.8L4 17.7V19h16v-1.3l-1.5-1.9z"
+                />
+              </svg>
+            </button>
+          </div>
+        </header>
 
-    <div id="peer-fingerprint-box" class="card" hidden>
-      <div class="peer-card-header">
-        <div class="card-label">
-          PEER FINGERPRINT - ask them to read this aloud to you
+        <div class="profile-card">
+          <div class="avatar-wrap">
+            <button
+              id="my-avatar"
+              class="avatar avatar-btn"
+              type="button"
+              title="Set profile photo"
+              aria-label="Set profile photo"
+            >
+              ?
+            </button>
+            <input id="avatar-input" type="file" accept="image/*" hidden />
+          </div>
+          <div class="profile-fields">
+            <label class="field-label" for="display-name-input">Your name</label>
+            <input
+              id="display-name-input"
+              maxlength="32"
+              autocomplete="nickname"
+              placeholder="Choose a display name"
+            />
+            <p class="profile-hint">
+              Tap the circle to add a photo, or keep the default initials.
+            </p>
+            <button id="avatar-reset-btn" class="text-btn avatar-reset" type="button" hidden>
+              Use default avatar
+            </button>
+          </div>
         </div>
-        <span id="selected-peer-status" class="presence-badge offline">offline</span>
-      </div>
-      <div id="peer-fingerprint" class="fingerprint-value">-</div>
-      <div id="peer-fingerprint-hex" class="fingerprint-hex"></div>
-    </div>
 
-    <div id="peers" class="card">
-      <div class="section-header">
-        <strong>Peers</strong>
-        <span class="card-label">Select one to start chatting</span>
-      </div>
-      <div id="peer-list">none (open another tab)</div>
-    </div>
-
-    <div id="groups" class="card">
-      <div class="section-header">
-        <strong>Groups</strong>
-        <span class="card-label">Add room state before sender-key rollout</span>
-      </div>
-      <div class="toolbar group-toolbar">
-        <input id="group-name-input" placeholder="New group name..." />
-        <button id="create-group-btn" type="button">Create Group</button>
-      </div>
-      <div id="group-list">none yet</div>
-    </div>
-
-    <div id="selected-group-box" class="card" hidden>
-      <div class="peer-card-header">
-        <div>
-          <div class="card-label">SELECTED GROUP</div>
-          <div id="selected-group-name" class="fingerprint-value">-</div>
+        <div id="install-card" class="install-card" hidden>
+          <div>
+            <strong id="install-title">Install app</strong>
+            <p id="install-copy" class="profile-hint">
+              Add E2EE Chat to your home screen.
+            </p>
+          </div>
+          <button id="install-btn" class="primary-btn" type="button">Add</button>
+          <button
+            id="install-dismiss"
+            class="icon-btn"
+            type="button"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
         </div>
-        <button id="leave-group-btn" type="button">Leave Group</button>
-      </div>
-      <div id="selected-group-meta" class="card-label"></div>
-      <div class="card-label">
-        Foundation only: next step is sender-key distribution and encrypted
-        group message fan-out.
+
+        <div class="sidebar-scroll">
+          <section class="sidebar-section">
+            <div class="section-header">
+              <h3>Chats</h3>
+              <span id="presence-summary" class="section-meta">0 online</span>
+            </div>
+            <div id="peer-list" class="list">
+              <div class="empty-note">
+                Open this page in another tab or on another device to chat.
+              </div>
+            </div>
+          </section>
+
+          <section class="sidebar-section">
+            <div class="section-header">
+              <h3>Groups</h3>
+            </div>
+            <div class="group-create">
+              <input id="group-name-input" placeholder="New group name" />
+              <button id="create-group-btn" class="text-btn" type="button">
+                Create
+              </button>
+            </div>
+            <div id="group-list" class="list">
+              <div class="empty-note">No groups yet.</div>
+            </div>
+          </section>
+        </div>
+      </aside>
+
+      <main class="chat-panel">
+        <div id="welcome" class="welcome">
+          <div class="welcome-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="42" height="42">
+              <path
+                fill="currentColor"
+                d="M12 2a5 5 0 0 0-5 5v2H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 7V7a3 3 0 1 1 6 0v2H9z"
+              />
+            </svg>
+          </div>
+          <h1>Private messages, end to end</h1>
+          <p>
+            Pick a chat on the left. Names are yours to choose; the relay never
+            sees message contents.
+          </p>
+        </div>
+
+        <div id="conversation" class="conversation" hidden>
+          <header class="chat-header">
+            <button
+              id="back-btn"
+              class="icon-btn back-btn"
+              type="button"
+              aria-label="Back to chats"
+            ></button>
+            <div id="chat-avatar" class="avatar">?</div>
+            <div class="chat-header-text">
+              <div id="chat-title">Chat</div>
+              <div id="chat-subtitle">End-to-end encrypted</div>
+            </div>
+            <div class="chat-header-actions">
+              <button
+                id="verify-btn"
+                class="icon-btn"
+                type="button"
+                title="Verify identity"
+                aria-label="Verify identity"
+              ></button>
+              <button
+                id="audio-call-btn"
+                class="icon-btn"
+                type="button"
+                title="Voice call"
+                aria-label="Voice call"
+              ></button>
+              <button
+                id="video-call-btn"
+                class="icon-btn"
+                type="button"
+                title="Video call"
+                aria-label="Video call"
+              ></button>
+              <button
+                id="leave-group-btn"
+                class="text-btn danger"
+                type="button"
+                hidden
+              >
+                Leave
+              </button>
+            </div>
+          </header>
+
+          <div id="chat" class="chat-log"></div>
+          <div id="typing-indicator" class="typing-indicator"></div>
+
+          <form id="composer" class="composer">
+            <button
+              id="attach-btn"
+              class="icon-btn"
+              type="button"
+              title="Share photo or video"
+              aria-label="Share photo or video"
+              disabled
+            ></button>
+            <input
+              id="attachment-input"
+              type="file"
+              accept="image/*,video/*"
+              hidden
+            />
+            <textarea
+              id="msg-input"
+              rows="1"
+              placeholder="Type a message"
+              disabled
+            ></textarea>
+            <button
+              id="send-btn"
+              class="send-btn"
+              type="submit"
+              aria-label="Send"
+              disabled
+            ></button>
+          </form>
+        </div>
+      </main>
+    </div>
+
+    <div id="verify-modal" class="modal" hidden>
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>Verify identity</h2>
+          <button
+            id="verify-close-btn"
+            class="icon-btn"
+            type="button"
+            aria-label="Close"
+          ></button>
+        </div>
+        <p class="modal-copy">
+          Read these fingerprints aloud. They must match on both devices.
+        </p>
+        <div class="fingerprint-grid">
+          <div class="fingerprint-card">
+            <div class="card-label">Your fingerprint</div>
+            <div id="my-fingerprint" class="fingerprint-value">computing…</div>
+            <div id="my-fingerprint-hex" class="fingerprint-hex"></div>
+          </div>
+          <div class="fingerprint-card">
+            <div class="card-label">Their fingerprint</div>
+            <div id="peer-fingerprint" class="fingerprint-value">-</div>
+            <div id="peer-fingerprint-hex" class="fingerprint-hex"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div id="chat"></div>
-    <div id="typing-indicator"></div>
-
-    <div id="input-row">
-      <div class="input-actions">
-        <button id="attach-btn" type="button" disabled>Share File</button>
-        <input id="attachment-input" type="file" hidden />
+    <div id="media-modal" class="modal" hidden>
+      <div class="modal-card media-card">
+        <div class="modal-header">
+          <h2>Send media</h2>
+          <button
+            id="media-close-btn"
+            class="icon-btn"
+            type="button"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div id="media-preview" class="media-preview"></div>
+        <div id="media-meta" class="media-meta"></div>
+        <label id="view-once-row" class="switch-row">
+          <input id="view-once-toggle" type="checkbox" />
+          <span class="switch-ui" aria-hidden="true"></span>
+          <span>
+            <strong>View once</strong>
+            <small>They can open this photo or video only one time.</small>
+          </span>
+        </label>
+        <div class="modal-actions">
+          <button id="media-cancel-btn" class="text-btn" type="button">
+            Cancel
+          </button>
+          <button id="media-send-btn" class="primary-btn" type="button">
+            Send
+          </button>
+        </div>
       </div>
-      <input id="msg-input" placeholder="Type a message..." disabled />
-      <button id="send-btn" disabled>Send</button>
     </div>
+
+    <div id="lightbox" class="lightbox" hidden>
+      <button
+        id="lightbox-close"
+        class="icon-btn lightbox-close"
+        type="button"
+        aria-label="Close"
+      ></button>
+      <div id="lightbox-body" class="lightbox-body"></div>
+    </div>
+
+    <div id="view-once-viewer" class="lightbox view-once-viewer" hidden>
+      <div class="view-once-banner">View once · this media is deleted when you close it</div>
+      <button
+        id="view-once-close"
+        class="icon-btn lightbox-close"
+        type="button"
+        aria-label="Close view once media"
+      ></button>
+      <div id="view-once-body" class="lightbox-body"></div>
+    </div>
+
+    <div id="incoming-call" class="call-overlay incoming" hidden>
+      <div class="incoming-card">
+        <div id="incoming-avatar" class="avatar avatar-lg">?</div>
+        <div id="incoming-name" class="incoming-name">Incoming call</div>
+        <div id="incoming-type" class="incoming-type">Voice call</div>
+      </div>
+      <div class="incoming-actions">
+        <button id="call-decline-btn" class="call-round decline" type="button">
+          Decline
+        </button>
+        <button id="call-accept-btn" class="call-round accept" type="button">
+          Accept
+        </button>
+      </div>
+    </div>
+
+    <div id="active-call" class="call-overlay in-call" hidden>
+      <video id="remote-video" autoplay playsinline></video>
+      <video id="local-video" autoplay playsinline muted></video>
+      <div id="call-fallback" class="call-fallback">
+        <div id="call-avatar" class="avatar avatar-xl">?</div>
+      </div>
+      <div class="call-info">
+        <div id="call-peer-name">Calling…</div>
+        <div id="call-timer">00:00</div>
+        <div id="call-state">Connecting</div>
+      </div>
+      <div class="call-controls">
+        <button
+          id="call-mute-btn"
+          class="call-round"
+          type="button"
+          title="Mute"
+        >
+          Mute
+        </button>
+        <button
+          id="call-camera-btn"
+          class="call-round"
+          type="button"
+          title="Camera"
+        >
+          Camera
+        </button>
+        <button
+          id="call-flip-btn"
+          class="call-round"
+          type="button"
+          title="Switch camera"
+          hidden
+        >
+          Flip
+        </button>
+        <button
+          id="call-hangup-btn"
+          class="call-round decline"
+          type="button"
+          title="Hang up"
+        >
+          End
+        </button>
+      </div>
+    </div>
+
+    <div id="toast-host" class="toast-host"></div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script>
-      const socket = io();
-
-      const QUICK_REACTIONS = ["❤️", "👍", "😂", "🔥"];
-
-      const statusEl = document.getElementById("status");
-      const myIdEl = document.getElementById("my-id");
-      const presenceSummaryEl = document.getElementById("presence-summary");
-      const notificationsBtnEl = document.getElementById("notifications-btn");
-      const notificationsStatusEl = document.getElementById("notifications-status");
-      const myFingerprintEl = document.getElementById("my-fingerprint");
-      const myFingerprintHexEl = document.getElementById("my-fingerprint-hex");
-      const peerFingerprintBoxEl = document.getElementById("peer-fingerprint-box");
-      const selectedPeerStatusEl = document.getElementById("selected-peer-status");
-      const peerFingerprintEl = document.getElementById("peer-fingerprint");
-      const peerFingerprintHexEl = document.getElementById("peer-fingerprint-hex");
-      const peerListEl = document.getElementById("peer-list");
-      const groupNameInputEl = document.getElementById("group-name-input");
-      const createGroupBtnEl = document.getElementById("create-group-btn");
-      const groupListEl = document.getElementById("group-list");
-      const selectedGroupBoxEl = document.getElementById("selected-group-box");
-      const selectedGroupNameEl = document.getElementById("selected-group-name");
-      const selectedGroupMetaEl = document.getElementById("selected-group-meta");
-      const leaveGroupBtnEl = document.getElementById("leave-group-btn");
-      const chatEl = document.getElementById("chat");
-      const typingIndicatorEl = document.getElementById("typing-indicator");
-      const attachBtnEl = document.getElementById("attach-btn");
-      const attachmentInputEl = document.getElementById("attachment-input");
-      const msgInputEl = document.getElementById("msg-input");
-      const sendBtnEl = document.getElementById("send-btn");
-
-      const ATTACHMENT_SIZE_LIMIT = 4 * 1024 * 1024;
-
-      let myKeyPair = null;
-      let myPublicKeyJwk = null;
-      let mySigningKeyPair = null;
-      let mySigningPublicKeyJwk = null;
-      let selectedPeer = null;
-      let selectedGroupId = null;
-      let visiblePeerIds = [];
-      let outgoingTypingPeerId = null;
-      let outgoingTypingTimer = null;
-
-      const groups = new Map();
-      const peerKeys = {};
-      const peerSigningKeys = {};
-      const typingPeers = new Set();
-      const messageStates = new Map();
-      const messageRegistry = new Map();
-      const groupSenderKeyState = new Map();
-
-      async function generateKeyPair() {
-        return crypto.subtle.generateKey(
-          { name: "ECDH", namedCurve: "P-256" },
-          true,
-          ["deriveKey"],
-        );
-      }
-
-      async function generateSigningKeyPair() {
-        return crypto.subtle.generateKey(
-          { name: "ECDSA", namedCurve: "P-256" },
-          true,
-          ["sign", "verify"],
-        );
-      }
-
-      async function exportPublicKey(key) {
-        return crypto.subtle.exportKey("jwk", key);
-      }
-
-      async function importPublicKey(jwk) {
-        return crypto.subtle.importKey(
-          "jwk",
-          jwk,
-          { name: "ECDH", namedCurve: "P-256" },
-          true,
-          [],
-        );
-      }
-
-      async function importSigningPublicKey(jwk) {
-        return crypto.subtle.importKey(
-          "jwk",
-          jwk,
-          { name: "ECDSA", namedCurve: "P-256" },
-          true,
-          ["verify"],
-        );
-      }
-
-      async function deriveSharedKey(myPrivateKey, theirPublicKey) {
-        return crypto.subtle.deriveKey(
-          { name: "ECDH", public: theirPublicKey },
-          myPrivateKey,
-          { name: "AES-GCM", length: 256 },
-          false,
-          ["encrypt", "decrypt"],
-        );
-      }
-
-      async function encrypt(aesKey, plaintext) {
-        const iv = crypto.getRandomValues(new Uint8Array(12));
-        const encoded = new TextEncoder().encode(plaintext);
-        const ciphertext = await crypto.subtle.encrypt(
-          { name: "AES-GCM", iv },
-          aesKey,
-          encoded,
-        );
-
-        return {
-          iv: btoa(String.fromCharCode(...iv)),
-          ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
-        };
-      }
-
-      async function decrypt(aesKey, ciphertextB64, ivB64) {
-        const iv = Uint8Array.from(atob(ivB64), (char) => char.charCodeAt(0));
-        const ciphertext = Uint8Array.from(atob(ciphertextB64), (char) =>
-          char.charCodeAt(0),
-        );
-        const decrypted = await crypto.subtle.decrypt(
-          { name: "AES-GCM", iv },
-          aesKey,
-          ciphertext,
-        );
-
-        return new TextDecoder().decode(decrypted);
-      }
-
-      function bytesToBase64(bytes) {
-        return btoa(String.fromCharCode(...bytes));
-      }
-
-      function base64ToBytes(value) {
-        return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
-      }
-
-      async function encryptBytes(aesKey, bytes) {
-        const iv = crypto.getRandomValues(new Uint8Array(12));
-        const ciphertext = await crypto.subtle.encrypt(
-          { name: "AES-GCM", iv },
-          aesKey,
-          bytes,
-        );
-
-        return {
-          iv: bytesToBase64(iv),
-          ciphertext: bytesToBase64(new Uint8Array(ciphertext)),
-        };
-      }
-
-      async function decryptBytes(aesKey, ciphertextB64, ivB64) {
-        const iv = base64ToBytes(ivB64);
-        const ciphertext = base64ToBytes(ciphertextB64);
-        const decrypted = await crypto.subtle.decrypt(
-          { name: "AES-GCM", iv },
-          aesKey,
-          ciphertext,
-        );
-
-        return new Uint8Array(decrypted);
-      }
-
-      async function signMessage(privateSignKey, plaintext) {
-        const encoded = new TextEncoder().encode(plaintext);
-        const signatureBuffer = await crypto.subtle.sign(
-          { name: "ECDSA", hash: "SHA-256" },
-          privateSignKey,
-          encoded,
-        );
-
-        return btoa(
-          String.fromCharCode(...new Uint8Array(signatureBuffer)),
-        );
-      }
-
-      async function verifySignature(publicSignKey, plaintext, signatureB64) {
-        const encoded = new TextEncoder().encode(plaintext);
-        const signatureBytes = Uint8Array.from(atob(signatureB64), (char) =>
-          char.charCodeAt(0),
-        );
-
-        return crypto.subtle.verify(
-          { name: "ECDSA", hash: "SHA-256" },
-          publicSignKey,
-          signatureBytes,
-          encoded,
-        );
-      }
-
-      async function readFileBytes(file) {
-        return new Uint8Array(await file.arrayBuffer());
-      }
-
-      function formatFileSize(bytes) {
-        if (bytes < 1024) {
-          return `${bytes} B`;
-        }
-
-        if (bytes < 1024 * 1024) {
-          return `${(bytes / 1024).toFixed(1)} KB`;
-        }
-
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-      }
-
-      function getAttachmentKind(mimeType) {
-        return mimeType && mimeType.startsWith("image/") ? "image" : "file";
-      }
-
-      function createAttachmentMeta({ name, mimeType, size }) {
-        return {
-          name,
-          mimeType: mimeType || "application/octet-stream",
-          size,
-          kind: getAttachmentKind(mimeType),
-        };
-      }
-
-      function buildTextSignaturePayload(plaintext) {
-        return JSON.stringify({
-          msgType: "text",
-          text: plaintext,
-        });
-      }
-
-      function buildAttachmentSignaturePayload(attachmentMeta, ciphertext, iv) {
-        return JSON.stringify({
-          msgType: "attachment",
-          name: attachmentMeta.name,
-          mimeType: attachmentMeta.mimeType,
-          size: attachmentMeta.size,
-          kind: attachmentMeta.kind,
-          ciphertext,
-          iv,
-        });
-      }
-
-      function createAttachmentUrl(bytes, mimeType) {
-        return URL.createObjectURL(
-          new Blob([bytes], {
-            type: mimeType || "application/octet-stream",
-          }),
-        );
-      }
-
-      async function getFingerprint(cryptoKey) {
-        const rawBytes = await crypto.subtle.exportKey("raw", cryptoKey);
-        const hashBuffer = await crypto.subtle.digest("SHA-256", rawBytes);
-        const hashBytes = new Uint8Array(hashBuffer);
-        const words = [
-          WORD_LIST[hashBytes[0] % WORD_LIST.length],
-          WORD_LIST[hashBytes[3] % WORD_LIST.length],
-          WORD_LIST[hashBytes[6] % WORD_LIST.length],
-          WORD_LIST[hashBytes[9] % WORD_LIST.length],
-        ];
-        const hex = Array.from(hashBytes.slice(0, 8))
-          .map((byte) => byte.toString(16).padStart(2, "0"))
-          .join("");
-
-        return { words: words.join("-"), hex };
-      }
-
-      const WORD_LIST = [
-        "alpha",
-        "bravo",
-        "cedar",
-        "delta",
-        "eagle",
-        "flame",
-        "globe",
-        "hotel",
-        "india",
-        "jungle",
-        "kite",
-        "lemon",
-        "mango",
-        "north",
-        "ocean",
-        "paper",
-        "quill",
-        "radio",
-        "storm",
-        "table",
-        "ultra",
-        "voice",
-        "water",
-        "xenon",
-        "yacht",
-        "zebra",
-        "amber",
-        "bolt",
-        "crane",
-        "drift",
-        "echo",
-        "frost",
-        "grace",
-        "haze",
-        "iron",
-        "jade",
-        "karma",
-        "lotus",
-        "marble",
-        "nova",
-        "orbit",
-        "pixel",
-        "quartz",
-        "river",
-        "solar",
-        "terra",
-        "unity",
-        "vapor",
-        "wave",
-        "xylem",
-        "yield",
-        "zonal",
-        "apex",
-        "blaze",
-        "comet",
-        "dune",
-        "ember",
-        "forge",
-        "glyph",
-        "helix",
-        "ionic",
-        "jewel",
-        "knot",
-        "lunar",
-        "maple",
-        "nexus",
-        "onyx",
-        "prism",
-        "relay",
-        "shard",
-        "titan",
-        "umbra",
-        "vortex",
-        "warp",
-        "xray",
-        "yoke",
-        "zone",
-        "arch",
-        "beam",
-        "cliff",
-        "dawn",
-        "edge",
-        "fern",
-        "gate",
-        "haven",
-        "isle",
-        "jolt",
-        "lamp",
-        "moss",
-        "node",
-        "opal",
-        "peak",
-        "quake",
-        "reed",
-        "slate",
-        "thorn",
-        "urn",
-        "vale",
-        "wind",
-        "xenith",
-        "yarn",
-        "zinc",
-        "arc",
-        "bay",
-        "crest",
-        "dial",
-        "elm",
-        "ford",
-        "glen",
-        "hull",
-        "ink",
-        "jaw",
-        "kelp",
-        "lake",
-        "mill",
-        "nook",
-        "ore",
-        "pine",
-        "quest",
-        "root",
-        "sand",
-        "tide",
-        "urn2",
-        "vale2",
-        "weld",
-        "xeno",
-        "yew",
-        "zest",
-        "ashen",
-        "birch",
-        "coral",
-        "dusk",
-        "eel",
-        "flint",
-        "gust",
-        "hawk",
-        "ivy",
-        "jasper",
-        "kelvin",
-        "lava",
-        "mist",
-        "nile",
-        "obsid",
-        "peat",
-        "quiver",
-        "rime",
-        "sage",
-        "teal",
-        "umber",
-        "veldt",
-        "wren",
-        "xenon2",
-        "yucca",
-        "zircon",
-        "anvil",
-        "brine",
-        "chalk",
-        "dew",
-        "ebb",
-        "fjord",
-        "gravel",
-        "hail",
-        "ingot",
-        "jade2",
-        "knoll",
-        "loam",
-        "moat",
-        "nick",
-        "ozone",
-        "parch",
-        "quoll",
-        "rush",
-        "scree",
-        "turf",
-        "undine",
-        "virid",
-        "whirl",
-        "xylo",
-        "yarrow",
-        "zilch",
-        "acorn",
-        "basalt",
-        "cobalt",
-        "dross",
-        "erode",
-        "floe",
-        "garnet",
-        "hoar",
-        "iodin",
-        "jasmine",
-        "krill",
-        "lichen",
-        "marl",
-        "nitro",
-        "ochre",
-        "pumice",
-        "quartz2",
-        "runoff",
-        "schist",
-        "talc",
-        "ulmin",
-        "vein",
-        "wadi",
-        "xerath",
-        "ylem",
-        "zonal2",
-        "agate",
-        "berm",
-        "cinder",
-        "dike",
-        "estuary",
-        "flint2",
-        "graben",
-        "horst",
-        "invar",
-        "jet",
-        "kame",
-        "levee",
-        "maars",
-        "nuee",
-        "outcrop",
-        "playa",
-        "quarry",
-        "rift",
-        "scarp",
-        "tephra",
-        "uvala",
-        "varve",
-        "wash",
-        "xenolith",
-        "yardang",
-        "zeolite",
-      ];
-
-      function generateMsgId() {
-        return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      }
-
-      function truncatePeerId(id) {
-        return id.slice(0, 8) + "...";
-      }
-
-      function getSentMessageKey(msgId) {
-        return "sent:" + msgId;
-      }
-
-      function getReceivedMessageKey(peerId, msgId) {
-        return "received:" + peerId + ":" + msgId;
-      }
-
-      function setComposerEnabled(enabled) {
-        msgInputEl.disabled = !enabled;
-        sendBtnEl.disabled = !enabled;
-        attachBtnEl.disabled = !enabled;
-      }
-
-      function ensureGroupSenderKeyState(groupId) {
-        if (!groupSenderKeyState.has(groupId)) {
-          groupSenderKeyState.set(groupId, {
-            mySenderKey: null,
-            mySenderKeyId: null,
-            remoteSenderKeys: {},
-            pendingMessages: [],
-            pendingDistributions: new Set(),
-            memberSnapshot: "",
-          });
-        }
-
-        return groupSenderKeyState.get(groupId);
-      }
-
-      async function generateSenderKey() {
-        return crypto.subtle.generateKey(
-          { name: "AES-GCM", length: 256 },
-          true,
-          ["encrypt", "decrypt"],
-        );
-      }
-
-      async function exportSenderKeyRaw(key) {
-        return new Uint8Array(await crypto.subtle.exportKey("raw", key));
-      }
-
-      async function importSenderKeyRaw(bytes) {
-        return crypto.subtle.importKey(
-          "raw",
-          bytes,
-          { name: "AES-GCM", length: 256 },
-          false,
-          ["encrypt", "decrypt"],
-        );
-      }
-
-      function getGroupMemberSnapshot(group) {
-        return [...group.members].sort().join(":");
-      }
-
-      function buildSenderKeyDistributionPayload({
-        groupId,
-        keyId,
-        recipientId,
-        ciphertext,
-        iv,
-      }) {
-        return JSON.stringify({
-          kind: "group-sender-key",
-          groupId,
-          keyId,
-          recipientId,
-          ciphertext,
-          iv,
-        });
-      }
-
-      function buildGroupMessageSignaturePayload({
-        groupId,
-        keyId,
-        msgId,
-        msgType,
-        ciphertext,
-        iv,
-        attachmentMeta = null,
-      }) {
-        return JSON.stringify({
-          kind: "group-message",
-          groupId,
-          keyId,
-          msgId,
-          msgType,
-          ciphertext,
-          iv,
-          attachmentMeta,
-        });
-      }
-
-      function getGroupMessageKey(groupId, senderId, msgId) {
-        return `group:${groupId}:${senderId}:${msgId}`;
-      }
-
-      function resetGroupSenderKeyState(state, memberSnapshot) {
-        state.mySenderKey = null;
-        state.mySenderKeyId = null;
-        state.remoteSenderKeys = {};
-        state.pendingMessages = [];
-        state.pendingDistributions = new Set();
-        state.memberSnapshot = memberSnapshot;
-      }
-
-      function notificationsSupported() {
-        return "Notification" in window;
-      }
-
-      function updateNotificationUI() {
-        if (!notificationsSupported()) {
-          notificationsBtnEl.disabled = true;
-          notificationsStatusEl.textContent =
-            "Browser notifications are not supported here.";
-          return;
-        }
-
-        if (Notification.permission === "granted") {
-          notificationsBtnEl.disabled = true;
-          notificationsBtnEl.textContent = "Notifications Enabled";
-          notificationsStatusEl.textContent =
-            "Browser notifications are enabled for incoming messages.";
-          return;
-        }
-
-        if (Notification.permission === "denied") {
-          notificationsBtnEl.disabled = true;
-          notificationsStatusEl.textContent =
-            "Notifications are blocked in this browser.";
-          return;
-        }
-
-        notificationsBtnEl.disabled = false;
-        notificationsBtnEl.textContent = "Enable Notifications";
-        notificationsStatusEl.textContent =
-          "Enable browser notifications for new messages and reactions.";
-      }
-
-      async function requestNotifications() {
-        if (!notificationsSupported()) {
-          return;
-        }
-
-        await Notification.requestPermission();
-        updateNotificationUI();
-      }
-
-      function maybeShowNotification(title, body, tag) {
-        if (!notificationsSupported() || Notification.permission !== "granted") {
-          return;
-        }
-
-        if (!document.hidden && document.hasFocus()) {
-          return;
-        }
-
-        const notification = new Notification(title, { body, tag });
-        notification.onclick = () => {
-          window.focus();
-          notification.close();
-        };
-      }
-
-      function updatePresenceSummary() {
-        const count = visiblePeerIds.length;
-        presenceSummaryEl.textContent =
-          count === 1 ? "1 peer online" : `${count} peers online`;
-      }
-
-      function updateSelectedPeerStatus() {
-        if (!selectedPeer) {
-          selectedPeerStatusEl.textContent = "offline";
-          selectedPeerStatusEl.className = "presence-badge offline";
-          typingIndicatorEl.textContent = "";
-          return;
-        }
-
-        if (typingPeers.has(selectedPeer.id)) {
-          selectedPeerStatusEl.textContent = "typing";
-          selectedPeerStatusEl.className = "presence-badge typing";
-          typingIndicatorEl.textContent =
-            truncatePeerId(selectedPeer.id) + " is typing...";
-          return;
-        }
-
-        selectedPeerStatusEl.textContent = "online";
-        selectedPeerStatusEl.className = "presence-badge online";
-        typingIndicatorEl.textContent = "";
-      }
-
-      function createPeerButton(peerId) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.dataset.peerId = peerId;
-        button.className =
-          "peer-btn" + (selectedPeer?.id === peerId ? " active" : "");
-
-        const nameEl = document.createElement("span");
-        nameEl.className = "peer-name";
-        nameEl.textContent = truncatePeerId(peerId);
-
-        const metaEl = document.createElement("span");
-        metaEl.className = "peer-meta";
-
-        const dotEl = document.createElement("span");
-        dotEl.className =
-          "status-dot" + (typingPeers.has(peerId) ? " typing" : "");
-
-        const statusTextEl = document.createElement("span");
-        statusTextEl.textContent = typingPeers.has(peerId) ? "typing..." : "online";
-
-        metaEl.appendChild(dotEl);
-        metaEl.appendChild(statusTextEl);
-        button.appendChild(nameEl);
-        button.appendChild(metaEl);
-        button.onclick = () => selectPeer(peerId);
-
-        return button;
-      }
-
-      function renderPeerList() {
-        peerListEl.textContent = "";
-        updatePresenceSummary();
-
-        if (visiblePeerIds.length === 0) {
-          peerListEl.textContent = "none (open another tab)";
-          updateSelectedPeerStatus();
-          return;
-        }
-
-        for (const peerId of visiblePeerIds) {
-          peerListEl.appendChild(createPeerButton(peerId));
-        }
-
-        updateSelectedPeerStatus();
-      }
-
-      function updateSelectedGroupPanel() {
-        const group = selectedGroupId ? groups.get(selectedGroupId) : null;
-        const isMember = group?.members.includes(socket.id);
-
-        if (!group || !isMember) {
-          selectedGroupBoxEl.hidden = true;
-          selectedGroupNameEl.textContent = "-";
-          selectedGroupMetaEl.textContent = "";
-          return;
-        }
-
-        const senderKeyState = ensureGroupSenderKeyState(group.id);
-        const memberPreview =
-          group.members.length > 0
-            ? group.members.map(truncatePeerId).join(", ")
-            : "none";
-        const senderKeyStatus = senderKeyState.mySenderKey
-          ? "sender key staged"
-          : "sender key not distributed yet";
-
-        selectedGroupBoxEl.hidden = false;
-        selectedGroupNameEl.textContent = group.name;
-        selectedGroupMetaEl.textContent =
-          `${group.memberCount} members · ${senderKeyStatus} · ${memberPreview}`;
-      }
-
-      async function selectGroup(groupId) {
-        const group = groups.get(groupId);
-        if (!group) {
-          return;
-        }
-
-        if (!group.members.includes(socket.id)) {
-          socket.emit("join-group", { groupId });
-        }
-
-        clearSelectedPeer({ preserveComposer: true });
-        selectedGroupId = groupId;
-        setComposerEnabled(true);
-        ensureGroupSenderKeyState(groupId);
-        renderGroupList();
-        updateSelectedGroupPanel();
-
-        try {
-          await ensureLocalSenderKeyForGroup(groupId);
-        } catch (error) {
-          appendMessage("system", `[group key setup failed: ${error.message}]`, {
-            type: "error",
-          });
-        }
-
-        msgInputEl.focus();
-      }
-
-      function createGroupButton(group) {
-        const button = document.createElement("button");
-        const isMember = group.members.includes(socket.id);
-        const isSelected = selectedGroupId === group.id && isMember;
-
-        button.type = "button";
-        button.className =
-          "group-btn" +
-          (isSelected ? " active" : "") +
-          (isMember ? "" : " joinable");
-
-        const infoEl = document.createElement("div");
-
-        const nameEl = document.createElement("div");
-        nameEl.className = "group-name";
-        nameEl.textContent = group.name;
-
-        const metaEl = document.createElement("div");
-        metaEl.className = "group-meta";
-        metaEl.textContent =
-          `${group.memberCount} members · ` +
-          (isMember ? "joined" : "tap to join");
-
-        const actionEl = document.createElement("span");
-        actionEl.className = "group-action";
-        actionEl.textContent = isSelected ? "selected" : isMember ? "open" : "join";
-
-        infoEl.appendChild(nameEl);
-        infoEl.appendChild(metaEl);
-        button.appendChild(infoEl);
-        button.appendChild(actionEl);
-
-        button.onclick = () => {
-          void selectGroup(group.id);
-        };
-
-        return button;
-      }
-
-      function renderGroupList() {
-        groupListEl.textContent = "";
-
-        if (groups.size === 0) {
-          groupListEl.textContent = "none yet";
-          updateSelectedGroupPanel();
-          return;
-        }
-
-        const sortedGroups = Array.from(groups.values()).sort((left, right) =>
-          left.name.localeCompare(right.name),
-        );
-
-        for (const group of sortedGroups) {
-          groupListEl.appendChild(createGroupButton(group));
-        }
-
-        updateSelectedGroupPanel();
-      }
-
-      async function distributeLocalSenderKey(groupId) {
-        const group = groups.get(groupId);
-        if (!group || !group.members.includes(socket.id)) {
-          return;
-        }
-
-        const state = ensureGroupSenderKeyState(groupId);
-        if (!state.mySenderKey || !state.mySenderKeyId) {
-          return;
-        }
-
-        const senderKeyBytes = await exportSenderKeyRaw(state.mySenderKey);
-        const distributions = [];
-
-        for (const memberId of group.members) {
-          if (memberId === socket.id || state.pendingDistributions.has(memberId)) {
-            continue;
-          }
-
-          const memberPublicKey = peerKeys[memberId];
-          if (!memberPublicKey) {
-            continue;
-          }
-
-          const sharedKey = await deriveSharedKey(
-            myKeyPair.privateKey,
-            memberPublicKey,
-          );
-          const { ciphertext, iv } = await encryptBytes(sharedKey, senderKeyBytes);
-          const signaturePayload = buildSenderKeyDistributionPayload({
-            groupId,
-            keyId: state.mySenderKeyId,
-            recipientId: memberId,
-            ciphertext,
-            iv,
-          });
-          const signature = await signMessage(
-            mySigningKeyPair.privateKey,
-            signaturePayload,
-          );
-
-          distributions.push({
-            to: memberId,
-            ciphertext,
-            iv,
-            signature,
-          });
-        }
-
-        if (distributions.length === 0) {
-          updateSelectedGroupPanel();
-          return;
-        }
-
-        socket.emit("distribute-group-sender-key", {
-          groupId,
-          keyId: state.mySenderKeyId,
-          senderPublicKey: myPublicKeyJwk,
-          senderSigningKey: mySigningPublicKeyJwk,
-          distributions,
-        });
-
-        for (const distribution of distributions) {
-          state.pendingDistributions.add(distribution.to);
-        }
-
-        updateSelectedGroupPanel();
-      }
-
-      async function ensureLocalSenderKeyForGroup(
-        groupId,
-        { forceRotate = false } = {},
-      ) {
-        const group = groups.get(groupId);
-        if (!group || !group.members.includes(socket.id)) {
-          return null;
-        }
-
-        const state = ensureGroupSenderKeyState(groupId);
-        const memberSnapshot = getGroupMemberSnapshot(group);
-        const membershipChanged =
-          state.memberSnapshot && state.memberSnapshot !== memberSnapshot;
-
-        if (forceRotate || membershipChanged) {
-          resetGroupSenderKeyState(state, memberSnapshot);
-        } else {
-          state.memberSnapshot = memberSnapshot;
-        }
-
-        if (!state.mySenderKey) {
-          state.mySenderKey = await generateSenderKey();
-          state.mySenderKeyId = generateMsgId();
-          state.pendingDistributions = new Set();
-        }
-
-        await distributeLocalSenderKey(groupId);
-        updateSelectedGroupPanel();
-        return state;
-      }
-
-      async function processIncomingGroupMessage(
-        payload,
-        { allowQueue = true } = {},
-      ) {
-        const {
-          groupId,
-          from,
-          keyId,
-          msgType = "text",
-          ciphertext,
-          iv,
-          signature,
-          msgId,
-          attachmentMeta,
-          senderSigningKey,
-        } = payload;
-
-        const group = groups.get(groupId);
-        if (!group || !group.members.includes(socket.id)) {
-          return false;
-        }
-
-        const state = ensureGroupSenderKeyState(groupId);
-        const senderKeyEntry = state.remoteSenderKeys[from];
-        if (!senderKeyEntry || senderKeyEntry.keyId !== keyId) {
-          if (allowQueue) {
-            state.pendingMessages.push(payload);
-          }
-          return false;
-        }
-
-        const signingKey =
-          senderSigningKey && signature
-            ? peerSigningKeys[from] || (await importSigningPublicKey(senderSigningKey))
-            : peerSigningKeys[from] || null;
-        if (signingKey) {
-          peerSigningKeys[from] = signingKey;
-        }
-
-        const verified =
-          signingKey && signature
-            ? await verifySignature(
-                signingKey,
-                buildGroupMessageSignaturePayload({
-                  groupId,
-                  keyId,
-                  msgId,
-                  msgType,
-                  ciphertext,
-                  iv,
-                  attachmentMeta,
-                }),
-                signature,
-              )
-            : false;
-
-        if (!verified) {
-          appendMessage(
-            "system",
-            `[group message rejected from ${truncatePeerId(from)}: signature verification failed]`,
-            { type: "error" },
-          );
-          return true;
-        }
-
-        const contextLabel = `group · ${group.name}`;
-        const messageKey = getGroupMessageKey(groupId, from, msgId);
-        const senderLabel = `${truncatePeerId(from)} @ ${group.name}`;
-
-        if (msgType === "attachment") {
-          const attachmentBytes = await decryptBytes(
-            senderKeyEntry.key,
-            ciphertext,
-            iv,
-          );
-          const attachment = {
-            ...attachmentMeta,
-            downloadUrl: createAttachmentUrl(
-              attachmentBytes,
-              attachmentMeta?.mimeType,
-            ),
-          };
-
-          appendMessage(senderLabel, "", {
-            type: "received",
-            verified,
-            msgId,
-            messageKey,
-            attachment,
-            contextLabel,
-          });
-
-          maybeShowNotification(
-            `${truncatePeerId(from)} shared ${attachment.kind} in ${group.name}`,
-            attachment.name,
-            `group-attachment-${groupId}-${msgId}`,
-          );
-        } else {
-          const plaintext = await decrypt(senderKeyEntry.key, ciphertext, iv);
-
-          appendMessage(senderLabel, plaintext, {
-            type: "received",
-            verified,
-            msgId,
-            messageKey,
-            contextLabel,
-          });
-
-          maybeShowNotification(
-            `New group message in ${group.name}`,
-            `${truncatePeerId(from)}: ${plaintext}`,
-            `group-message-${groupId}-${msgId}`,
-          );
-        }
-
-        return true;
-      }
-
-      async function drainPendingGroupMessages(groupId, senderId) {
-        const state = ensureGroupSenderKeyState(groupId);
-        const remaining = [];
-
-        for (const pendingMessage of state.pendingMessages) {
-          if (
-            pendingMessage.groupId === groupId &&
-            pendingMessage.from === senderId
-          ) {
-            const processed = await processIncomingGroupMessage(pendingMessage, {
-              allowQueue: false,
-            });
-
-            if (!processed) {
-              remaining.push(pendingMessage);
-            }
-          } else {
-            remaining.push(pendingMessage);
-          }
-        }
-
-        state.pendingMessages = remaining;
-      }
-
-      function registerPublicKeys() {
-        if (!myPublicKeyJwk || !mySigningPublicKeyJwk) {
-          return;
-        }
-
-        socket.emit("register-key", {
-          encryptKey: myPublicKeyJwk,
-          signKey: mySigningPublicKeyJwk,
-        });
-      }
-
-      function clearSelectedPeer({ preserveComposer = false } = {}) {
-        if (outgoingTypingPeerId) {
-          stopOutgoingTyping(outgoingTypingPeerId);
-        }
-
-        selectedPeer = null;
-        if (!preserveComposer) {
-          setComposerEnabled(false);
-        }
-        attachmentInputEl.value = "";
-        peerFingerprintBoxEl.hidden = true;
-        peerFingerprintEl.textContent = "-";
-        peerFingerprintHexEl.textContent = "";
-        updateSelectedPeerStatus();
-        renderPeerList();
-      }
-
-      async function selectPeer(id) {
-        const peerKey = peerKeys[id];
-        if (!peerKey) {
-          return;
-        }
-
-        if (selectedGroupId) {
-          selectedGroupId = null;
-          renderGroupList();
-        }
-
-        if (outgoingTypingPeerId && outgoingTypingPeerId !== id) {
-          stopOutgoingTyping(outgoingTypingPeerId);
-        }
-
-        selectedPeer = {
-          id,
-          key: peerKey,
-          signKey: peerSigningKeys[id],
-        };
-
-        const { words, hex } = await getFingerprint(selectedPeer.key);
-        peerFingerprintEl.textContent = words;
-        peerFingerprintHexEl.textContent = hex;
-        peerFingerprintBoxEl.hidden = false;
-        setComposerEnabled(true);
-        renderPeerList();
-      }
-
-      function createSignatureBadge(verified) {
-        const badge = document.createElement("span");
-        badge.className = "sig-badge " + (verified ? "sig-ok" : "sig-fail");
-        badge.textContent = verified ? "signed" : "unverified";
-        badge.title = verified
-          ? "Signature verified"
-          : "Signature could not be verified";
-        return badge;
-      }
-
-      function createAttachmentCard(attachment) {
-        const {
-          name,
-          mimeType,
-          size,
-          kind,
-          downloadUrl,
-        } = attachment;
-
-        const cardEl = document.createElement("div");
-        cardEl.className = "attachment-card";
-
-        const headerEl = document.createElement("div");
-        headerEl.className = "attachment-header";
-
-        const titleEl = document.createElement("div");
-        titleEl.className = "attachment-title";
-        titleEl.textContent = name;
-
-        const badgeEl = document.createElement("span");
-        badgeEl.className = "attachment-badge";
-        badgeEl.textContent = kind;
-
-        headerEl.appendChild(titleEl);
-        headerEl.appendChild(badgeEl);
-        cardEl.appendChild(headerEl);
-
-        if (kind === "image") {
-          const previewEl = document.createElement("img");
-          previewEl.className = "attachment-preview";
-          previewEl.src = downloadUrl;
-          previewEl.alt = name;
-          cardEl.appendChild(previewEl);
-        }
-
-        const metaEl = document.createElement("div");
-        metaEl.className = "attachment-meta";
-        metaEl.textContent = `${mimeType} · ${formatFileSize(size)}`;
-        cardEl.appendChild(metaEl);
-
-        const linkEl = document.createElement("a");
-        linkEl.className = "attachment-link";
-        linkEl.href = downloadUrl;
-        linkEl.download = name;
-        linkEl.textContent =
-          kind === "image" ? "Download image" : "Download file";
-        cardEl.appendChild(linkEl);
-
-        return cardEl;
-      }
-
-      function createReactionChip(emoji, label, variant) {
-        const chip = document.createElement("span");
-        chip.className = "reaction-chip " + variant;
-        chip.textContent = `${emoji} ${label}`;
-        return chip;
-      }
-
-      function renderReactionState(entry) {
-        entry.reactionStripEl.textContent = "";
-
-        if (entry.localReaction) {
-          entry.reactionStripEl.appendChild(
-            createReactionChip(entry.localReaction, "you reacted", "mine"),
-          );
-        }
-
-        if (entry.remoteReaction) {
-          entry.reactionStripEl.appendChild(
-            createReactionChip(entry.remoteReaction, "reacted", "remote"),
-          );
-        }
-
-        for (const button of entry.reactionButtons) {
-          button.classList.toggle(
-            "active",
-            entry.localReaction === button.dataset.emoji,
-          );
-        }
-      }
-
-      function appendMessage(who, text, options = {}) {
-        const {
-          type = "received",
-          verified = false,
-          msgId = null,
-          peerId = null,
-          messageKey = null,
-          attachment = null,
-          contextLabel = "",
-        } = options;
-
-        const messageEl = document.createElement("div");
-        messageEl.className = "msg msg-" + type;
-
-        if (contextLabel) {
-          const contextEl = document.createElement("div");
-          contextEl.className = "conversation-label";
-          contextEl.textContent = contextLabel;
-          messageEl.appendChild(contextEl);
-        }
-
-        const rowEl = document.createElement("div");
-        rowEl.className = "message-row";
-
-        const whoEl = document.createElement("span");
-        whoEl.className = "who";
-        whoEl.textContent = who + ":";
-
-        const contentEl = attachment
-          ? createAttachmentCard(attachment)
-          : document.createElement("span");
-
-        if (!attachment) {
-          contentEl.className = "text";
-          contentEl.textContent = text;
-        }
-
-        rowEl.appendChild(whoEl);
-        rowEl.appendChild(contentEl);
-
-        if (type !== "error" && who !== "system") {
-          rowEl.appendChild(createSignatureBadge(verified));
-        }
-
-        if (type === "sent") {
-          const tickEl = document.createElement("span");
-          tickEl.className = "tick tick-sent";
-          tickEl.title = "sent";
-          tickEl.textContent = "✓";
-          rowEl.appendChild(tickEl);
-        }
-
-        messageEl.appendChild(rowEl);
-
-        const reactionStripEl = document.createElement("div");
-        reactionStripEl.className = "reaction-strip";
-        messageEl.appendChild(reactionStripEl);
-
-        const reactionButtons = [];
-        if (type === "received" && peerId && msgId && messageKey) {
-          const reactionPickerEl = document.createElement("div");
-          reactionPickerEl.className = "reaction-picker";
-
-          for (const emoji of QUICK_REACTIONS) {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "reaction-btn";
-            button.dataset.emoji = emoji;
-            button.textContent = emoji;
-            button.onclick = () => toggleReaction(messageKey, emoji);
-            reactionPickerEl.appendChild(button);
-            reactionButtons.push(button);
-          }
-
-          messageEl.appendChild(reactionPickerEl);
-        }
-
-        chatEl.appendChild(messageEl);
-        chatEl.scrollTop = chatEl.scrollHeight;
-
-        if (messageKey) {
-          const entry = {
-            type,
-            msgId,
-            peerId,
-            reactionStripEl,
-            reactionButtons,
-            localReaction: null,
-            remoteReaction: null,
-          };
-
-          messageRegistry.set(messageKey, entry);
-          renderReactionState(entry);
-        }
-
-        return messageEl;
-      }
-
-      function updateTick(messageEl, status) {
-        const tickEl = messageEl.querySelector(".tick");
-        if (!tickEl) {
-          return;
-        }
-
-        if (status === "delivered") {
-          tickEl.textContent = "✓✓";
-          tickEl.className = "tick tick-delivered";
-          tickEl.title = "delivered";
-        } else if (status === "read") {
-          tickEl.textContent = "✓✓";
-          tickEl.className = "tick tick-read";
-          tickEl.title = "read";
-        }
-      }
-
-      function emitReaction(entry, emoji, action) {
-        socket.emit("message-reaction", {
-          to: entry.peerId,
-          msgId: entry.msgId,
-          emoji,
-          action,
-        });
-      }
-
-      function toggleReaction(messageKey, emoji) {
-        const entry = messageRegistry.get(messageKey);
-        if (!entry) {
-          return;
-        }
-
-        if (entry.localReaction === emoji) {
-          entry.localReaction = null;
-          emitReaction(entry, emoji, "remove");
-          renderReactionState(entry);
-          return;
-        }
-
-        if (entry.localReaction) {
-          emitReaction(entry, entry.localReaction, "remove");
-        }
-
-        entry.localReaction = emoji;
-        emitReaction(entry, emoji, "add");
-        renderReactionState(entry);
-      }
-
-      function stopOutgoingTyping(targetPeerId = outgoingTypingPeerId) {
-        if (outgoingTypingTimer) {
-          window.clearTimeout(outgoingTypingTimer);
-          outgoingTypingTimer = null;
-        }
-
-        if (!targetPeerId) {
-          outgoingTypingPeerId = null;
-          return;
-        }
-
-        socket.emit("typing-stop", { to: targetPeerId });
-        if (outgoingTypingPeerId === targetPeerId) {
-          outgoingTypingPeerId = null;
-        }
-      }
-
-      function scheduleTypingTimeout(targetPeerId) {
-        if (outgoingTypingTimer) {
-          window.clearTimeout(outgoingTypingTimer);
-        }
-
-        outgoingTypingTimer = window.setTimeout(() => {
-          stopOutgoingTyping(targetPeerId);
-        }, 1200);
-      }
-
-      function handleComposerInput() {
-        if (!selectedPeer) {
-          return;
-        }
-
-        const value = msgInputEl.value.trim();
-        if (!value) {
-          stopOutgoingTyping();
-          return;
-        }
-
-        if (outgoingTypingPeerId && outgoingTypingPeerId !== selectedPeer.id) {
-          stopOutgoingTyping(outgoingTypingPeerId);
-        }
-
-        if (outgoingTypingPeerId !== selectedPeer.id) {
-          socket.emit("typing-start", { to: selectedPeer.id });
-          outgoingTypingPeerId = selectedPeer.id;
-        }
-
-        scheduleTypingTimeout(selectedPeer.id);
-      }
-
-      async function sendDirectAttachment(file) {
-        if (!selectedPeer || !file) {
-          return;
-        }
-
-        if (file.size === 0) {
-          appendMessage("system", "[empty files cannot be shared]", {
-            type: "error",
-          });
-          return;
-        }
-
-        if (file.size > ATTACHMENT_SIZE_LIMIT) {
-          appendMessage(
-            "system",
-            `[attachment too large: max ${formatFileSize(ATTACHMENT_SIZE_LIMIT)}]`,
-            { type: "error" },
-          );
-          return;
-        }
-
-        const targetPeer = selectedPeer;
-        attachBtnEl.disabled = true;
-
-        try {
-          const bytes = await readFileBytes(file);
-          const attachmentMeta = createAttachmentMeta({
-            name: file.name,
-            mimeType: file.type,
-            size: file.size,
-          });
-          const sharedKey = await deriveSharedKey(
-            myKeyPair.privateKey,
-            targetPeer.key,
-          );
-          const { ciphertext, iv } = await encryptBytes(sharedKey, bytes);
-          const signaturePayload = buildAttachmentSignaturePayload(
-            attachmentMeta,
-            ciphertext,
-            iv,
-          );
-          const signature = await signMessage(
-            mySigningKeyPair.privateKey,
-            signaturePayload,
-          );
-          const msgId = generateMsgId();
-
-          socket.emit("send-message", {
-            to: targetPeer.id,
-            msgType: "attachment",
-            ciphertext,
-            iv,
-            attachmentMeta,
-            senderPublicKey: myPublicKeyJwk,
-            senderSigningKey: mySigningPublicKeyJwk,
-            signature,
-            msgId,
-          });
-
-          stopOutgoingTyping(targetPeer.id);
-
-          const attachment = {
-            ...attachmentMeta,
-            downloadUrl: createAttachmentUrl(bytes, attachmentMeta.mimeType),
-          };
-
-          const messageEl = appendMessage("you", "", {
-            type: "sent",
-            verified: true,
-            msgId,
-            peerId: targetPeer.id,
-            messageKey: getSentMessageKey(msgId),
-            attachment,
-          });
-
-          messageStates.set(msgId, {
-            status: "sent",
-            el: messageEl,
-            to: targetPeer.id,
-          });
-        } catch (error) {
-          appendMessage("system", `[attachment send failed: ${error.message}]`, {
-            type: "error",
-          });
-        } finally {
-          attachmentInputEl.value = "";
-          if (selectedPeer) {
-            attachBtnEl.disabled = false;
-          }
-        }
-      }
-
-      async function sendGroupAttachment(file) {
-        if (!selectedGroupId || !file) {
-          return;
-        }
-
-        const group = groups.get(selectedGroupId);
-        if (!group || !group.members.includes(socket.id)) {
-          return;
-        }
-
-        if (file.size === 0) {
-          appendMessage("system", "[empty files cannot be shared]", {
-            type: "error",
-          });
-          return;
-        }
-
-        if (file.size > ATTACHMENT_SIZE_LIMIT) {
-          appendMessage(
-            "system",
-            `[attachment too large: max ${formatFileSize(ATTACHMENT_SIZE_LIMIT)}]`,
-            { type: "error" },
-          );
-          return;
-        }
-
-        attachBtnEl.disabled = true;
-
-        try {
-          const state = await ensureLocalSenderKeyForGroup(selectedGroupId);
-          if (!state?.mySenderKey || !state.mySenderKeyId) {
-            throw new Error("sender key unavailable");
-          }
-
-          const bytes = await readFileBytes(file);
-          const attachmentMeta = createAttachmentMeta({
-            name: file.name,
-            mimeType: file.type,
-            size: file.size,
-          });
-          const { ciphertext, iv } = await encryptBytes(state.mySenderKey, bytes);
-          const msgId = generateMsgId();
-          const signature = await signMessage(
-            mySigningKeyPair.privateKey,
-            buildGroupMessageSignaturePayload({
-              groupId: selectedGroupId,
-              keyId: state.mySenderKeyId,
-              msgId,
-              msgType: "attachment",
-              ciphertext,
-              iv,
-              attachmentMeta,
-            }),
-          );
-
-          socket.emit("send-group-message", {
-            groupId: selectedGroupId,
-            keyId: state.mySenderKeyId,
-            msgType: "attachment",
-            ciphertext,
-            iv,
-            attachmentMeta,
-            senderSigningKey: mySigningPublicKeyJwk,
-            signature,
-            msgId,
-          });
-
-          const attachment = {
-            ...attachmentMeta,
-            downloadUrl: createAttachmentUrl(bytes, attachmentMeta.mimeType),
-          };
-
-          appendMessage("you", "", {
-            type: "sent",
-            verified: true,
-            msgId,
-            messageKey: getGroupMessageKey(selectedGroupId, socket.id, msgId),
-            attachment,
-            contextLabel: `group · ${group.name}`,
-          });
-        } catch (error) {
-          appendMessage(
-            "system",
-            `[group attachment send failed: ${error.message}]`,
-            { type: "error" },
-          );
-        } finally {
-          attachmentInputEl.value = "";
-          if (selectedGroupId) {
-            attachBtnEl.disabled = false;
-          }
-        }
-      }
-
-      async function sendAttachment(file) {
-        if (selectedGroupId) {
-          await sendGroupAttachment(file);
-          return;
-        }
-
-        await sendDirectAttachment(file);
-      }
-
-      async function sendDirectText(text) {
-        if (!text || !selectedPeer) {
-          return;
-        }
-
-        const targetPeer = selectedPeer;
-        const sharedKey = await deriveSharedKey(
-          myKeyPair.privateKey,
-          targetPeer.key,
-        );
-        const { ciphertext, iv } = await encrypt(sharedKey, text);
-        const signature = await signMessage(
-          mySigningKeyPair.privateKey,
-          buildTextSignaturePayload(text),
-        );
-        const msgId = generateMsgId();
-
-        socket.emit("send-message", {
-          to: targetPeer.id,
-          msgType: "text",
-          ciphertext,
-          iv,
-          senderPublicKey: myPublicKeyJwk,
-          senderSigningKey: mySigningPublicKeyJwk,
-          signature,
-          msgId,
-        });
-
-        stopOutgoingTyping(targetPeer.id);
-
-        const messageEl = appendMessage("you", text, {
-          type: "sent",
-          verified: true,
-          msgId,
-          peerId: targetPeer.id,
-          messageKey: getSentMessageKey(msgId),
-        });
-
-        messageStates.set(msgId, {
-          status: "sent",
-          el: messageEl,
-          to: targetPeer.id,
-        });
-      }
-
-      async function sendGroupText(text) {
-        if (!text || !selectedGroupId) {
-          return;
-        }
-
-        const group = groups.get(selectedGroupId);
-        if (!group || !group.members.includes(socket.id)) {
-          return;
-        }
-
-        const state = await ensureLocalSenderKeyForGroup(selectedGroupId);
-        if (!state?.mySenderKey || !state.mySenderKeyId) {
-          throw new Error("sender key unavailable");
-        }
-
-        const { ciphertext, iv } = await encrypt(state.mySenderKey, text);
-        const msgId = generateMsgId();
-        const signature = await signMessage(
-          mySigningKeyPair.privateKey,
-          buildGroupMessageSignaturePayload({
-            groupId: selectedGroupId,
-            keyId: state.mySenderKeyId,
-            msgId,
-            msgType: "text",
-            ciphertext,
-            iv,
-          }),
-        );
-
-        socket.emit("send-group-message", {
-          groupId: selectedGroupId,
-          keyId: state.mySenderKeyId,
-          msgType: "text",
-          ciphertext,
-          iv,
-          senderSigningKey: mySigningPublicKeyJwk,
-          signature,
-          msgId,
-        });
-
-        appendMessage("you", text, {
-          type: "sent",
-          verified: true,
-          msgId,
-          messageKey: getGroupMessageKey(selectedGroupId, socket.id, msgId),
-          contextLabel: `group · ${group.name}`,
-        });
-      }
-
-      async function handleIncomingGroupSenderKey({
-        from,
-        groupId,
-        keyId,
-        ciphertext,
-        iv,
-        signature,
-        senderPublicKey,
-        senderSigningKey,
-      }) {
-        const group = groups.get(groupId);
-        if (!group || !group.members.includes(socket.id)) {
-          return;
-        }
-
-        const senderCryptoKey =
-          peerKeys[from] || (await importPublicKey(senderPublicKey));
-        peerKeys[from] = senderCryptoKey;
-
-        const signingKey =
-          senderSigningKey && signature
-            ? peerSigningKeys[from] || (await importSigningPublicKey(senderSigningKey))
-            : peerSigningKeys[from] || null;
-        if (signingKey) {
-          peerSigningKeys[from] = signingKey;
-        }
-
-        const verified =
-          signingKey && signature
-            ? await verifySignature(
-                signingKey,
-                buildSenderKeyDistributionPayload({
-                  groupId,
-                  keyId,
-                  recipientId: socket.id,
-                  ciphertext,
-                  iv,
-                }),
-                signature,
-              )
-            : false;
-
-        if (!verified) {
-          appendMessage(
-            "system",
-            `[group sender key rejected from ${truncatePeerId(from)}]`,
-            { type: "error" },
-          );
-          return;
-        }
-
-        const sharedKey = await deriveSharedKey(
-          myKeyPair.privateKey,
-          senderCryptoKey,
-        );
-        const senderKeyBytes = await decryptBytes(sharedKey, ciphertext, iv);
-        const senderKey = await importSenderKeyRaw(senderKeyBytes);
-        const state = ensureGroupSenderKeyState(groupId);
-
-        state.remoteSenderKeys[from] = {
-          keyId,
-          key: senderKey,
-        };
-
-        await drainPendingGroupMessages(groupId, from);
-        updateSelectedGroupPanel();
-      }
-
-      async function init() {
-        updateNotificationUI();
-
-        try {
-          myKeyPair = await generateKeyPair();
-          myPublicKeyJwk = await exportPublicKey(myKeyPair.publicKey);
-          mySigningKeyPair = await generateSigningKeyPair();
-          mySigningPublicKeyJwk = await exportPublicKey(
-            mySigningKeyPair.publicKey,
-          );
-
-          const { words, hex } = await getFingerprint(myKeyPair.publicKey);
-          myFingerprintEl.textContent = words;
-          myFingerprintHexEl.textContent = hex;
-          statusEl.textContent = "Keys generated. Connecting...";
-
-          if (socket.connected) {
-            myIdEl.textContent = "Your ID: " + socket.id;
-            statusEl.textContent = "Connected. Select a peer.";
-            registerPublicKeys();
-          }
-        } catch (error) {
-          statusEl.textContent = "Key setup failed.";
-          appendMessage("system", `[setup failed: ${error.message}]`, {
-            type: "error",
-          });
-        }
-      }
-
-      socket.on("connect", () => {
-        myIdEl.textContent = "Your ID: " + socket.id;
-        statusEl.textContent = myPublicKeyJwk
-          ? "Connected. Select a peer."
-          : "Connected. Preparing keys...";
-        registerPublicKeys();
-        socket.emit("request-groups");
-      });
-
-      socket.on("disconnect", () => {
-        statusEl.textContent = "Disconnected. Reconnecting...";
-        visiblePeerIds = [];
-        selectedGroupId = null;
-        typingPeers.clear();
-        groups.clear();
-        groupSenderKeyState.clear();
-
-        for (const peerId of Object.keys(peerKeys)) {
-          delete peerKeys[peerId];
-          delete peerSigningKeys[peerId];
-        }
-
-        clearSelectedPeer();
-        renderGroupList();
-      });
-
-      socket.on("peer-list", async (peers) => {
-        const connectedPeerIds = [];
-
-        for (const peer of peers) {
-          if (peer.id === socket.id) {
-            continue;
-          }
-
-          if (!peer.encryptKey || !peer.signKey) {
-            continue;
-          }
-
-          try {
-            peerKeys[peer.id] = await importPublicKey(peer.encryptKey);
-            peerSigningKeys[peer.id] = await importSigningPublicKey(
-              peer.signKey,
-            );
-            connectedPeerIds.push(peer.id);
-          } catch (error) {
-            console.warn("Failed to import peer keys:", error);
-          }
-        }
-
-        for (const peerId of Object.keys(peerKeys)) {
-          if (!connectedPeerIds.includes(peerId)) {
-            delete peerKeys[peerId];
-            delete peerSigningKeys[peerId];
-            typingPeers.delete(peerId);
-          }
-        }
-
-        visiblePeerIds = connectedPeerIds;
-
-        if (selectedPeer && visiblePeerIds.includes(selectedPeer.id)) {
-          selectedPeer = {
-            id: selectedPeer.id,
-            key: peerKeys[selectedPeer.id],
-            signKey: peerSigningKeys[selectedPeer.id],
-          };
-          const { words, hex } = await getFingerprint(selectedPeer.key);
-          peerFingerprintEl.textContent = words;
-          peerFingerprintHexEl.textContent = hex;
-        } else if (selectedPeer) {
-          clearSelectedPeer();
-          return;
-        }
-
-        renderPeerList();
-
-        for (const group of groups.values()) {
-          if (group.members.includes(socket.id)) {
-            try {
-              await ensureLocalSenderKeyForGroup(group.id);
-            } catch (error) {
-              console.warn("Failed to refresh sender key after peer sync:", error);
-            }
-          }
-        }
-      });
-
-      socket.on("group-list", async (serverGroups) => {
-        groups.clear();
-
-        for (const group of serverGroups) {
-          groups.set(group.id, group);
-
-          if (group.members.includes(socket.id)) {
-            const state = ensureGroupSenderKeyState(group.id);
-            const memberSnapshot = getGroupMemberSnapshot(group);
-            if (state.memberSnapshot && state.memberSnapshot !== memberSnapshot) {
-              resetGroupSenderKeyState(state, memberSnapshot);
-            } else {
-              state.memberSnapshot = memberSnapshot;
-            }
-          }
-        }
-
-        for (const groupId of Array.from(groupSenderKeyState.keys())) {
-          const group = groups.get(groupId);
-          if (!group || !group.members.includes(socket.id)) {
-            groupSenderKeyState.delete(groupId);
-          }
-        }
-
-        if (selectedGroupId) {
-          const group = groups.get(selectedGroupId);
-          if (!group || !group.members.includes(socket.id)) {
-            selectedGroupId = null;
-          }
-        }
-
-        for (const group of groups.values()) {
-          if (group.members.includes(socket.id)) {
-            try {
-              await ensureLocalSenderKeyForGroup(group.id);
-            } catch (error) {
-              console.warn("Failed to distribute sender key for group:", error);
-            }
-          }
-        }
-
-        renderGroupList();
-      });
-
-      socket.on("group-selected", ({ groupId }) => {
-        if (!groupId) {
-          return;
-        }
-
-        void selectGroup(groupId);
-      });
-
-      socket.on("group-sender-key", (payload) => {
-        void handleIncomingGroupSenderKey(payload);
-      });
-
-      socket.on("receive-group-message", (payload) => {
-        void processIncomingGroupMessage(payload);
-      });
-
-      socket.on("typing-start", ({ from }) => {
-        typingPeers.add(from);
-        renderPeerList();
-      });
-
-      socket.on("typing-stop", ({ from }) => {
-        typingPeers.delete(from);
-        renderPeerList();
-      });
-
-      socket.on(
-        "receive-message",
-        async ({
-          msgType = "text",
-          from,
-          ciphertext,
-          iv,
-          senderPublicKey,
-          senderSigningKey,
-          signature,
-          msgId,
-          attachmentMeta,
-        }) => {
-          socket.emit("msg-delivered", { to: from, msgId });
-          typingPeers.delete(from);
-
-          try {
-            const senderCryptoKey =
-              peerKeys[from] || (await importPublicKey(senderPublicKey));
-            peerKeys[from] = senderCryptoKey;
-            const signingKey =
-              senderSigningKey && signature
-                ? peerSigningKeys[from] ||
-                  (await importSigningPublicKey(senderSigningKey))
-                : null;
-            if (signingKey) {
-              peerSigningKeys[from] = signingKey;
-            }
-
-            const sharedKey = await deriveSharedKey(
-              myKeyPair.privateKey,
-              senderCryptoKey,
-            );
-
-            const messageKey = getReceivedMessageKey(from, msgId);
-            if (msgType === "attachment") {
-              const verified =
-                signingKey && signature
-                  ? await verifySignature(
-                      signingKey,
-                      buildAttachmentSignaturePayload(
-                        attachmentMeta,
-                        ciphertext,
-                        iv,
-                      ),
-                      signature,
-                    )
-                  : false;
-              const attachmentBytes = await decryptBytes(
-                sharedKey,
-                ciphertext,
-                iv,
-              );
-              const attachment = {
-                ...attachmentMeta,
-                downloadUrl: createAttachmentUrl(
-                  attachmentBytes,
-                  attachmentMeta?.mimeType,
-                ),
-              };
-
-              appendMessage(truncatePeerId(from), "", {
-                type: "received",
-                verified,
-                msgId,
-                peerId: from,
-                messageKey,
-                attachment,
-              });
-
-              maybeShowNotification(
-                `${truncatePeerId(from)} shared ${attachment.kind}`,
-                attachment.name,
-                `attachment-${from}-${msgId}`,
-              );
-            } else {
-              const plaintext = await decrypt(sharedKey, ciphertext, iv);
-              const verified =
-                signingKey && signature
-                  ? await verifySignature(
-                      signingKey,
-                      buildTextSignaturePayload(plaintext),
-                      signature,
-                    )
-                  : false;
-
-              appendMessage(truncatePeerId(from), plaintext, {
-                type: "received",
-                verified,
-                msgId,
-                peerId: from,
-                messageKey,
-              });
-
-              maybeShowNotification(
-                `New message from ${truncatePeerId(from)}`,
-                plaintext,
-                `message-${from}`,
-              );
-            }
-
-            socket.emit("msg-read", { to: from, msgId });
-          } catch (error) {
-            appendMessage("system", `[decryption failed: ${error.message}]`, {
-              type: "error",
-            });
-          }
-
-          renderPeerList();
-        },
-      );
-
-      socket.on("message-reaction", ({ from, msgId, emoji, action }) => {
-        const entry = messageRegistry.get(getSentMessageKey(msgId));
-        if (!entry) {
-          return;
-        }
-
-        entry.remoteReaction = action === "remove" ? null : emoji;
-        renderReactionState(entry);
-
-        if (action === "add") {
-          maybeShowNotification(
-            `${truncatePeerId(from)} reacted ${emoji}`,
-            "to one of your messages",
-            `reaction-${msgId}`,
-          );
-        }
-      });
-
-      socket.on("msg-delivered", ({ msgId }) => {
-        const state = messageStates.get(msgId);
-        if (!state) {
-          return;
-        }
-
-        state.status = "delivered";
-        updateTick(state.el, "delivered");
-      });
-
-      socket.on("msg-read", ({ msgId }) => {
-        const state = messageStates.get(msgId);
-        if (!state) {
-          return;
-        }
-
-        state.status = "read";
-        updateTick(state.el, "read");
-      });
-
-      notificationsBtnEl.addEventListener("click", requestNotifications);
-
-      createGroupBtnEl.addEventListener("click", () => {
-        const name = groupNameInputEl.value.trim();
-        if (!name) {
-          return;
-        }
-
-        socket.emit("create-group", { name });
-        groupNameInputEl.value = "";
-      });
-
-      groupNameInputEl.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          createGroupBtnEl.click();
-        }
-      });
-
-      leaveGroupBtnEl.addEventListener("click", () => {
-        if (!selectedGroupId) {
-          return;
-        }
-
-        socket.emit("leave-group", { groupId: selectedGroupId });
-        selectedGroupId = null;
-        if (!selectedPeer) {
-          setComposerEnabled(false);
-        }
-        renderGroupList();
-      });
-
-      sendBtnEl.onclick = async () => {
-        const text = msgInputEl.value.trim();
-        if (!text) {
-          return;
-        }
-
-        try {
-          if (selectedGroupId) {
-            await sendGroupText(text);
-          } else {
-            await sendDirectText(text);
-          }
-
-          msgInputEl.value = "";
-          msgInputEl.focus();
-        } catch (error) {
-          appendMessage("system", `[send failed: ${error.message}]`, {
-            type: "error",
-          });
-        }
-      };
-
-      msgInputEl.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          sendBtnEl.click();
-        }
-      });
-
-      attachBtnEl.addEventListener("click", () => {
-        if (!selectedPeer && !selectedGroupId) {
-          return;
-        }
-
-        attachmentInputEl.click();
-      });
-
-      attachmentInputEl.addEventListener("change", async (event) => {
-        const [file] = event.target.files;
-        await sendAttachment(file);
-      });
-
-      msgInputEl.addEventListener("input", handleComposerInput);
-      window.addEventListener("beforeunload", () => stopOutgoingTyping());
-
-      init();
-    </script>
+    <script src="/app.js"></script>
   </body>
 </html>

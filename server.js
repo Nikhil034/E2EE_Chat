@@ -4,15 +4,30 @@ const { Server } = require("socket.io");
 const path = require("path");
 
 const app = express();
+app.set("trust proxy", 1);
 const server = http.createServer(app);
 const io = new Server(server, {
-  // First-cut attachment support for small encrypted files/images.
-  maxHttpBufferSize: 10 * 1024 * 1024,
+  // Encrypted image/video payloads are base64-wrapped JSON.
+  maxHttpBufferSize: 20 * 1024 * 1024,
+});
+
+app.use((req, res, next) => {
+  res.set("Referrer-Policy", "no-referrer");
+  res.set("X-Content-Type-Options", "nosniff");
+  res.set("Permissions-Policy", "display-capture=()");
+  if (
+    req.path === "/" ||
+    req.path.endsWith(".html") ||
+    req.path.endsWith(".css") ||
+    req.path.endsWith(".js")
+  ) {
+    res.set("Cache-Control", "no-store");
+  }
+  next();
 });
 
 app.use(express.static(path.join(__dirname, "public")));
 
-// In-memory key store: socketId -> exported public keys (JWK)
 const publicKeys = {};
 const groups = {};
 
@@ -20,9 +35,35 @@ function createGroupId() {
   return "grp_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
+function sanitizeDisplayName(name) {
+  if (typeof name !== "string") {
+    return "";
+  }
+
+  return name.replace(/\s+/g, " ").trim().slice(0, 32);
+}
+
+function sanitizeAvatar(avatar) {
+  if (typeof avatar !== "string") {
+    return "";
+  }
+
+  if (!avatar.startsWith("data:image/")) {
+    return "";
+  }
+
+  if (avatar.length > 120000) {
+    return "";
+  }
+
+  return avatar;
+}
+
 function getPeerList() {
   return Object.entries(publicKeys).map(([id, keys]) => ({
     id,
+    displayName: keys.displayName,
+    avatar: keys.avatar || "",
     encryptKey: keys.encryptKey,
     signKey: keys.signKey,
   }));
@@ -68,27 +109,65 @@ function removeSocketFromGroups(socketId) {
   return changed;
 }
 
+function relayToPeer(socket, eventName, { to, ...payload }) {
+  if (!to || typeof to !== "string" || to === socket.id) {
+    return;
+  }
+
+  io.to(to).emit(eventName, {
+    from: socket.id,
+    ...payload,
+  });
+}
+
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
   socket.emit("group-list", getGroupList());
 
-  // Client registers their public key
-  socket.on("register-key", ({ encryptKey, signKey }) => {
-    publicKeys[socket.id] = { encryptKey, signKey };
+  socket.on("register-key", ({ encryptKey, signKey, displayName, avatar }) => {
+    if (!encryptKey || !signKey) {
+      return;
+    }
+
+    publicKeys[socket.id] = {
+      encryptKey,
+      signKey,
+      displayName: sanitizeDisplayName(displayName) || "Anonymous",
+      avatar: sanitizeAvatar(avatar),
+    };
     broadcastPeerList();
     console.log(`Keys registered for ${socket.id}`);
   });
 
-  // Relay encrypted message to target peer only
-  socket.on("send-message", ({ to, ...message }) => {
-    if (!to) {
+  socket.on("update-name", (displayName) => {
+    if (!publicKeys[socket.id]) {
       return;
     }
 
-    io.to(to).emit("receive-message", {
-      from: socket.id,
-      ...message,
-    });
+    publicKeys[socket.id].displayName =
+      sanitizeDisplayName(displayName) || "Anonymous";
+    broadcastPeerList();
+  });
+
+  socket.on("update-profile", ({ displayName, avatar } = {}) => {
+    if (!publicKeys[socket.id]) {
+      return;
+    }
+
+    if (displayName !== undefined) {
+      publicKeys[socket.id].displayName =
+        sanitizeDisplayName(displayName) || "Anonymous";
+    }
+
+    if (avatar !== undefined) {
+      publicKeys[socket.id].avatar = sanitizeAvatar(avatar);
+    }
+
+    broadcastPeerList();
+  });
+
+  socket.on("send-message", ({ to, ...message }) => {
+    relayToPeer(socket, "receive-message", { to, ...message });
   });
 
   socket.on("request-groups", () => {
@@ -96,7 +175,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("create-group", ({ name }) => {
-    const groupName = typeof name === "string" ? name.trim() : "";
+    const groupName = sanitizeDisplayName(name);
     if (!groupName) {
       return;
     }
@@ -188,19 +267,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("typing-start", ({ to }) => {
-    if (!to) {
-      return;
-    }
-
-    io.to(to).emit("typing-start", { from: socket.id });
+    relayToPeer(socket, "typing-start", { to });
   });
 
   socket.on("typing-stop", ({ to }) => {
-    if (!to) {
-      return;
-    }
-
-    io.to(to).emit("typing-stop", { from: socket.id });
+    relayToPeer(socket, "typing-stop", { to });
   });
 
   socket.on("message-reaction", ({ to, msgId, emoji, action }) => {
@@ -208,22 +279,27 @@ io.on("connection", (socket) => {
       return;
     }
 
-    io.to(to).emit("message-reaction", {
-      from: socket.id,
-      msgId,
-      emoji,
-      action,
-    });
+    relayToPeer(socket, "message-reaction", { to, msgId, emoji, action });
   });
 
-  // Relay delivered ack back to original sender
   socket.on("msg-delivered", ({ to, msgId }) => {
-    io.to(to).emit("msg-delivered", { msgId });
+    relayToPeer(socket, "msg-delivered", { to, msgId });
   });
 
-  // Relay read ack back to original sender
   socket.on("msg-read", ({ to, msgId }) => {
-    io.to(to).emit("msg-read", { msgId });
+    relayToPeer(socket, "msg-read", { to, msgId });
+  });
+
+  socket.on("view-once-opened", ({ to, msgId }) => {
+    relayToPeer(socket, "view-once-opened", { to, msgId });
+  });
+
+  socket.on("call-signal", ({ to, data }) => {
+    if (!to || !data || typeof data !== "object") {
+      return;
+    }
+
+    relayToPeer(socket, "call-signal", { to, data });
   });
 
   socket.on("disconnect", () => {
@@ -237,6 +313,8 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3000, () =>
-  console.log("Server running at http://localhost:3000"),
+const PORT = Number(process.env.PORT) || 3000;
+
+server.listen(PORT, "0.0.0.0", () =>
+  console.log(`Server running at http://localhost:${PORT}`),
 );
