@@ -2202,6 +2202,9 @@ function setCallChrome(callType, statusText) {
   activeCallEl.classList.toggle("audio-only", callType !== "video");
   callCameraBtnEl.style.display = callType === "video" ? "" : "none";
   callFlipBtnEl.hidden = callType !== "video";
+  if (callType === "video") {
+    void refreshCameraFlipAvailability();
+  }
   callMuteBtnEl.classList.remove("active");
   callCameraBtnEl.classList.remove("active");
   callMuteBtnEl.textContent = "Mute";
@@ -2247,6 +2250,77 @@ async function getCallMedia(callType, facingMode = "user") {
           }
         : false,
   });
+}
+
+function updateLocalPreviewMirror(facingMode) {
+  localVideoEl.classList.toggle("mirrored", facingMode !== "environment");
+}
+
+async function refreshCameraFlipAvailability() {
+  if (!callSession || callSession.callType !== "video") {
+    callFlipBtnEl.hidden = true;
+    return;
+  }
+  try {
+    const videos = (await navigator.mediaDevices.enumerateDevices()).filter(
+      (device) => device.kind === "videoinput",
+    );
+    callSession.canFlip = videos.length > 1;
+    callFlipBtnEl.hidden = videos.length === 0;
+  } catch {
+    callFlipBtnEl.hidden = false;
+  }
+}
+
+function getVideoSender() {
+  if (!callSession?.pc) {
+    return null;
+  }
+  return (
+    callSession.pc.getSenders().find((item) => item.track?.kind === "video") ||
+    null
+  );
+}
+
+async function attachLocalVideoTrack(newTrack) {
+  if (!callSession || !newTrack) {
+    return;
+  }
+  const sender = getVideoSender();
+  if (sender) {
+    await sender.replaceTrack(newTrack);
+  } else if (callSession.pc) {
+    callSession.pc.addTrack(newTrack, callSession.localStream);
+  }
+  callSession.localStream.getVideoTracks().forEach((track) => {
+    if (track !== newTrack) {
+      callSession.localStream.removeTrack(track);
+      track.stop();
+    }
+  });
+  if (!callSession.localStream.getVideoTracks().includes(newTrack)) {
+    callSession.localStream.addTrack(newTrack);
+  }
+  localVideoEl.srcObject = callSession.localStream;
+  try {
+    await localVideoEl.play();
+  } catch {
+    // autoplay can wait for the next gesture
+  }
+}
+
+async function openVideoOnlyTrack(videoConstraints) {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: videoConstraints,
+  });
+  const track = stream.getVideoTracks()[0] || null;
+  stream.getTracks().forEach((item) => {
+    if (item !== track) {
+      item.stop();
+    }
+  });
+  return track;
 }
 
 function onCallConnected() {
@@ -2300,6 +2374,7 @@ function cleanupCall() {
     // already closed
   }
   localVideoEl.srcObject = null;
+  localVideoEl.classList.remove("mirrored");
   remoteVideoEl.srcObject = null;
   incomingCallEl.hidden = true;
   activeCallEl.hidden = true;
@@ -2340,6 +2415,8 @@ async function startCall(callType) {
     const pc = createPeerConnection(peerId);
     localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
     localVideoEl.srcObject = localStream;
+    updateLocalPreviewMirror("user");
+    const openedVideo = localStream.getVideoTracks()[0];
     callSession = {
       peerId,
       callType,
@@ -2348,8 +2425,10 @@ async function startCall(callType) {
       localStream,
       pendingIce: [],
       startedAt: null,
-      facingMode: "user",
+      facingMode: openedVideo?.getSettings?.().facingMode || "user",
+      videoDeviceId: openedVideo?.getSettings?.().deviceId || "",
     };
+    void refreshCameraFlipAvailability();
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     signalCall(peerId, {
@@ -2384,7 +2463,11 @@ async function acceptCall() {
     localVideoEl.srcObject = localStream;
     callSession.pc = pc;
     callSession.localStream = localStream;
-    callSession.facingMode = "user";
+    const openedVideo = localStream.getVideoTracks()[0];
+    callSession.facingMode = openedVideo?.getSettings?.().facingMode || "user";
+    callSession.videoDeviceId = openedVideo?.getSettings?.().deviceId || "";
+    updateLocalPreviewMirror(callSession.facingMode);
+    void refreshCameraFlipAvailability();
     await pc.setRemoteDescription(callSession.remoteOffer);
     await flushIce();
     const answer = await pc.createAnswer();
@@ -2518,40 +2601,115 @@ function toggleCamera() {
 }
 
 async function switchCamera() {
-  if (!callSession || callSession.callType !== "video") {
+  if (!callSession || callSession.callType !== "video" || callSession.flipping) {
     return;
   }
-  const nextFacing =
-    callSession.facingMode === "environment" ? "user" : "environment";
+
+  const oldTrack = callSession.localStream?.getVideoTracks()[0];
+  if (!oldTrack) {
+    showToast("Turn the camera on first, then tap Flip.", "error");
+    return;
+  }
+
+  callSession.flipping = true;
+  callFlipBtnEl.disabled = true;
+
+  const settings = oldTrack.getSettings ? oldTrack.getSettings() : {};
+  const currentFacing = settings.facingMode || callSession.facingMode || "user";
+  const nextFacing = currentFacing === "environment" ? "user" : "environment";
+  const currentId = settings.deviceId || callSession.videoDeviceId || "";
+
   try {
-    const replacement = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {
-        facingMode: { ideal: nextFacing },
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-    });
-    const newTrack = replacement.getVideoTracks()[0];
+    try {
+      await oldTrack.applyConstraints({ facingMode: { exact: nextFacing } });
+      const applied = oldTrack.getSettings ? oldTrack.getSettings() : {};
+      if (applied.facingMode && applied.facingMode !== currentFacing) {
+        callSession.facingMode = applied.facingMode;
+        callSession.videoDeviceId = applied.deviceId || currentId;
+        updateLocalPreviewMirror(applied.facingMode);
+        return;
+      }
+    } catch {
+      // Many browsers cannot flip in place; reopen the other camera below.
+    }
+
+    const videos = (await navigator.mediaDevices.enumerateDevices()).filter(
+      (device) => device.kind === "videoinput" && device.deviceId,
+    );
+    let nextDevice = null;
+    if (videos.length > 1) {
+      const index = videos.findIndex((device) => device.deviceId === currentId);
+      nextDevice = videos[(index + 1) % videos.length];
+      if (!nextDevice || nextDevice.deviceId === currentId) {
+        nextDevice = videos.find((device) => device.deviceId !== currentId) || null;
+      }
+    }
+
+    oldTrack.stop();
+    callSession.localStream.removeTrack(oldTrack);
+
+    const attempts = [];
+    if (nextDevice?.deviceId) {
+      attempts.push({ deviceId: { exact: nextDevice.deviceId } });
+    }
+    attempts.push({ facingMode: { exact: nextFacing } });
+    attempts.push({ facingMode: nextFacing });
+    attempts.push({ facingMode: { ideal: nextFacing } });
+    attempts.push(true);
+
+    let newTrack = null;
+    let lastError = null;
+    for (const video of attempts) {
+      try {
+        newTrack = await openVideoOnlyTrack(video);
+        if (newTrack) {
+          break;
+        }
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
     if (!newTrack) {
-      throw new Error("No camera track");
+      try {
+        const restored = await openVideoOnlyTrack(
+          currentId
+            ? { deviceId: { exact: currentId } }
+            : { facingMode: currentFacing || "user" },
+        );
+        if (restored) {
+          await attachLocalVideoTrack(restored);
+          updateLocalPreviewMirror(currentFacing);
+        }
+      } catch {
+        // The original camera may also be busy; the call stays audio-only until hangup.
+      }
+      throw lastError || new Error("switch failed");
     }
-    const sender = callSession.pc
-      ?.getSenders()
-      .find((item) => item.track && item.track.kind === "video");
-    if (sender) {
-      await sender.replaceTrack(newTrack);
-    }
-    const oldTrack = callSession.localStream.getVideoTracks()[0];
-    if (oldTrack) {
-      callSession.localStream.removeTrack(oldTrack);
-      oldTrack.stop();
-    }
-    callSession.localStream.addTrack(newTrack);
-    localVideoEl.srcObject = callSession.localStream;
-    callSession.facingMode = nextFacing;
+
+    await attachLocalVideoTrack(newTrack);
+    const applied = newTrack.getSettings ? newTrack.getSettings() : {};
+    callSession.facingMode = applied.facingMode || nextFacing;
+    callSession.videoDeviceId = applied.deviceId || nextDevice?.deviceId || "";
+    updateLocalPreviewMirror(callSession.facingMode);
   } catch (error) {
-    showToast("Could not switch camera on this device.", "error");
+    console.warn("switchCamera failed", error);
+    const name = error?.name || "";
+    if (name === "NotFoundError" || name === "OverconstrainedError") {
+      showToast("No second camera found on this device.", "error");
+    } else if (name === "NotAllowedError") {
+      showToast("Camera permission is blocked for this site.", "error");
+    } else {
+      showToast(
+        "Could not switch camera. Close other apps using the camera and try Flip again.",
+        "error",
+      );
+    }
+  } finally {
+    if (callSession) {
+      callSession.flipping = false;
+    }
+    callFlipBtnEl.disabled = false;
   }
 }
 

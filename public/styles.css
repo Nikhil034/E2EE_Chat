@@ -1130,6 +1130,10 @@ textarea:disabled {
   z-index: 2;
 }
 
+#local-video.mirrored {
+  transform: scaleX(-1);
+}
+
 .call-overlay.audio-only video {
   display: none;
 }
